@@ -1,3 +1,4 @@
+#include <GL/glew.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/OpenGL.hpp>
@@ -9,6 +10,8 @@
 void OpenGL_Setup();
 // SFML Context Settings for OpenGL Rendering
 sf::ContextSettings OpenGL_WindowContextSetup();
+// GLEW Initializer
+void InitGLEW();
 
 int main()
 {
@@ -20,6 +23,8 @@ int main()
     window.setActive(true);
     // Setup OpenGL to Current Context
     OpenGL_Setup();
+    // Initialize GLEW
+    InitGLEW();
     bool running = true;
 
     while (running)
@@ -110,4 +115,15 @@ void OpenGL_Setup()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(90.f, 1.f, 1.f, 500.f);
+}
+
+void InitGLEW()
+{
+    // Initialize GLEW
+    glewExperimental = true; // Needed for core profile
+
+    if (glewInit() != GLEW_OK)
+    {
+        fprintf(stderr, "Failed to initialize GLEW\n");
+    }
 }
