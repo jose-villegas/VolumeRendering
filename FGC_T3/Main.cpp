@@ -1,41 +1,118 @@
 #include <GL/glew.h>
+#include "GL/glm/glm.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/OpenGL.hpp>
+#include "UIBuilder.h"
+#include "RawDataModel.h"
 #include <iostream>
-
 #define WINDOW_OFFSET 200
 
 // OpenGL Setup Before Rendering to Context
-void OpenGL_Setup();
+void openglSetup(sf::VideoMode desktop);
 // SFML Context Settings for OpenGL Rendering
-sf::ContextSettings OpenGL_WindowContextSetup();
+sf::ContextSettings openglWindowContext();
 // GLEW Initializer
-void InitGLEW();
+void initGlew();
+// Setup AntTweakBar
+void guiSetup(sf::RenderWindow &window, UIBuilder &gui);
+// Main Render-Logic Loop
+void Render(sf::RenderWindow &window, sf::Clock &clock);
+
+// Active Volume Data
+RawDataModel rawModel;
 
 int main()
 {
+    UIBuilder gui;
     sf::Clock clock;
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
     desktop.height = desktop.height - WINDOW_OFFSET;
     desktop.width = desktop.width - WINDOW_OFFSET;
-    sf::RenderWindow window(desktop, "SFML works!", sf::Style::Default, OpenGL_WindowContextSetup());
+    sf::RenderWindow window(desktop, "SFML works!", sf::Style::Default, openglWindowContext());
     window.setActive(true);
+    // Setup AntTweakBar for GUI
+    guiSetup(window, gui);
     // Setup OpenGL to Current Context
-    OpenGL_Setup();
+    openglSetup(desktop);
     // Initialize GLEW
-    InitGLEW();
-    bool running = true;
+    initGlew();
+    // Initialze Main Loop
+    Render(window, clock);
+    return 0;
+}
 
-    while (running)
+sf::ContextSettings openglWindowContext()
+{
+    sf::ContextSettings settings;
+    settings.depthBits = 24;
+    settings.stencilBits = 8;
+    settings.antialiasingLevel = 2;
+    settings.majorVersion = 3;
+    settings.minorVersion = 0;
+    return settings;
+}
+
+void openglSetup(sf::VideoMode desktop)
+{
+    // Set color and depth clear value
+    glClearDepth(1.f);
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    // Enable Z-buffer read and write
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    // Setup a perspective projection
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(90.f, desktop.width / desktop.height, 1.f, 500.f);
+}
+
+void initGlew()
+{
+    // Initialize GLEW
+    glewExperimental = true; // Needed for core profile
+
+    if (glewInit() != GLEW_OK)
+    {
+        fprintf(stderr, "Failed to initialize GLEW\n");
+    }
+}
+
+struct Callbacks
+{
+    static void TW_CALL loadModelClick(void * clientData)
+    {
+        rawModel.Load(rawModel.sModelName, rawModel.width, rawModel.height, rawModel.numCuts);
+    }
+};
+
+void guiSetup(sf::RenderWindow &window, UIBuilder &gui)
+{
+    gui.init(window.getSize().x, window.getSize().y);
+    gui.addBar("Archivo");
+    gui.setBarPosition("Archivo", 5, 5);
+    gui.addFileDialogButton("Archivo", "Seleccionar .RAW", &rawModel.sModelName, "");
+    gui.addTextfield("Archivo", "Modelo: ", &rawModel.sModelName, "");
+    gui.addIntegerNumber("Archivo", "Ancho", &rawModel.width, "");
+    gui.addIntegerNumber("Archivo", "Largo", &rawModel.height, "");
+    gui.addIntegerNumber("Archivo", "Cortes", &rawModel.numCuts, "");
+    gui.addButton("Archivo", "Cargar Modelo Seleccionado", Callbacks::loadModelClick, NULL, "");
+}
+
+void Render(sf::RenderWindow &window, sf::Clock &clock)
+{
+    while (window.isOpen())
     {
         sf::Event event;
 
         while (window.pollEvent(event))
         {
+            // Send event to AntTweakBar
+            int handled = TwEventSFML(&event, 1, 6); // Assume SFML version 1.6 here
+
             if (event.type == sf::Event::Closed)
             {
-                running = false;
+                window.close();
             }
             else if (event.type == sf::Event::Resized)
             {
@@ -85,45 +162,11 @@ int main()
         glVertex3f(1.0f, -1.0f, 1.0f);	// Bottom Left Of The Quad (Right)
         glVertex3f(1.0f, -1.0f, -1.0f);	// Bottom Right Of The Quad (Right)
         glEnd();
+        // Draw UI
+        TwDraw();
         // End Frame
         window.display();
     }
-
-    return 0;
 }
 
-sf::ContextSettings OpenGL_WindowContextSetup()
-{
-    sf::ContextSettings settings;
-    settings.depthBits = 24;
-    settings.stencilBits = 8;
-    settings.antialiasingLevel = 2;
-    settings.majorVersion = 3;
-    settings.minorVersion = 0;
-    return settings;
-}
 
-void OpenGL_Setup()
-{
-    // Set color and depth clear value
-    glClearDepth(1.f);
-    glClearColor(0.f, 0.f, 0.f, 0.f);
-    // Enable Z-buffer read and write
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    // Setup a perspective projection
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(90.f, 1.f, 1.f, 500.f);
-}
-
-void InitGLEW()
-{
-    // Initialize GLEW
-    glewExperimental = true; // Needed for core profile
-
-    if (glewInit() != GLEW_OK)
-    {
-        fprintf(stderr, "Failed to initialize GLEW\n");
-    }
-}

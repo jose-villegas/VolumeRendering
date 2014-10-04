@@ -15,8 +15,8 @@ Global
 		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Debug Static|Win32.Build.0 = Debug Static|Win32
 		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Debug|Win32.ActiveCfg = Debug|Win32
 		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Debug|Win32.Build.0 = Debug|Win32
-		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Release Static|Win32.ActiveCfg = Release Static|Win32
-		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Release Static|Win32.Build.0 = Release Static|Win32
+		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Release Static|Win32.ActiveCfg = Release|Win32
+		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Release Static|Win32.Build.0 = Release|Win32
 		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Release|Win32.ActiveCfg = Release|Win32
 		{48FC435C-3F74-43BF-8FC1-0FB39DB7A7F4}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
