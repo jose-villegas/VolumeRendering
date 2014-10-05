@@ -90,7 +90,7 @@ void UIBuilder::addDirectionControls(std::string sBarName, std::string sName, vo
 
 void UIBuilder::addTextfield(std::string sBarName, std::string sName, void * var, std::string sVarParams)
 {
-    addVariable(sBarName, sName, TW_TYPE_STDSTRING, var, sVarParams);
+    addVariable(sBarName, sName, TW_TYPE_CDSTRING, var, sVarParams);
 }
 
 void UIBuilder::addLabel(std::string sBarName, std::string sLabelText)
@@ -105,7 +105,7 @@ void UIBuilder::addButton(std::string sBarName, std::string sLabelText, TwButton
     TwAddButton(bar, sLabelText.c_str(), bCallBackFunc, clientData, sParams.c_str());
 }
 
-void UIBuilder::addFileDialogButton(std::string sBarName, std::string sLabelText, std::string * destString, std::string sParams)
+void UIBuilder::addFileDialogButton(std::string sBarName, std::string sLabelText, char * destString, std::string sParams)
 {
     TwBar * bar = _uiBars[sBarName];
     TwAddButton(bar, sLabelText.c_str(), fileDialogButtonOnCB, destString, sParams.c_str());
@@ -115,10 +115,10 @@ void TW_CALL fileDialogButtonOnCB(void * clientData)
 {
     struct OpenFileDialog   // struct's as good as class
     {
-        static void show(std::string * sFilePath)
+        static void show(char * sFilePath)
         {
             OPENFILENAME ofn;       // common dialog box structure
-            char szFile[1024];       // buffer for file name
+            char szFile[1024] = {""};       // buffer for file name
             HWND hwnd = nullptr;              // owner window
             HANDLE hf;              // file handle
             // Initialize OPENFILENAME
@@ -140,12 +140,13 @@ void TW_CALL fileDialogButtonOnCB(void * clientData)
             // Display the Open dialog box.
             if (GetOpenFileName(&ofn) == TRUE)
             {
-                hf = CreateFile(ofn.lpstrFile, GENERIC_READ, 0, (LPSECURITY_ATTRIBUTES) NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, (HANDLE) NULL);
-                *sFilePath = std::string(szFile);
+                std::string filename = szFile;
+                const size_t last_slash_idx = filename.find_last_of("\\/");
+                memcpy(sFilePath, &szFile[last_slash_idx + 1], 1024);
             }
         }
     };
-    std::thread dialogThread(OpenFileDialog::show, ((std::string *)clientData));
+    std::thread dialogThread(OpenFileDialog::show, ((char *)clientData));
     dialogThread.join();
 }
 

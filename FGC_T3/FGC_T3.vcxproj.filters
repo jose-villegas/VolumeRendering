@@ -24,12 +24,18 @@
     <ClCompile Include="UIBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\GitHub\Volume_Rendering_Using_GLSL\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RawDataModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UIBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="commons.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,11 +1,6 @@
-#include <GL/glew.h>
-#include "GL/glm/glm.hpp"
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-#include <SFML/OpenGL.hpp>
+#include "commons.h"
 #include "UIBuilder.h"
 #include "RawDataModel.h"
-#include <iostream>
 #define WINDOW_OFFSET 200
 
 // OpenGL Setup Before Rendering to Context
@@ -15,12 +10,11 @@ sf::ContextSettings openglWindowContext();
 // GLEW Initializer
 void initGlew();
 // Setup AntTweakBar
-void guiSetup(sf::RenderWindow &window, UIBuilder &gui);
+void guiSetup(sf::Window &window, UIBuilder &gui);
 // Main Render-Logic Loop
-void Render(sf::RenderWindow &window, sf::Clock &clock);
-
+void Render(sf::Window &window, sf::Clock &clock);
 // Active Volume Data
-RawDataModel rawModel;
+RawDataModel * rawModel = new RawDataModel();
 
 int main()
 {
@@ -29,14 +23,15 @@ int main()
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
     desktop.height = desktop.height - WINDOW_OFFSET;
     desktop.width = desktop.width - WINDOW_OFFSET;
-    sf::RenderWindow window(desktop, "SFML works!", sf::Style::Default, openglWindowContext());
+    sf::Window window(desktop, "SFML works!", sf::Style::Default, openglWindowContext());
+    gui.setHwnd(window.getSystemHandle()) ;
     window.setActive(true);
+    // Initialize GLEW
+    initGlew();
     // Setup AntTweakBar for GUI
     guiSetup(window, gui);
     // Setup OpenGL to Current Context
     openglSetup(desktop);
-    // Initialize GLEW
-    initGlew();
     // Initialze Main Loop
     Render(window, clock);
     return 0;
@@ -47,7 +42,7 @@ sf::ContextSettings openglWindowContext()
     sf::ContextSettings settings;
     settings.depthBits = 24;
     settings.stencilBits = 8;
-    settings.antialiasingLevel = 2;
+    settings.antialiasingLevel = 0;
     settings.majorVersion = 3;
     settings.minorVersion = 0;
     return settings;
@@ -75,6 +70,7 @@ void initGlew()
     if (glewInit() != GLEW_OK)
     {
         fprintf(stderr, "Failed to initialize GLEW\n");
+        return;
     }
 }
 
@@ -82,24 +78,24 @@ struct Callbacks
 {
     static void TW_CALL loadModelClick(void * clientData)
     {
-        rawModel.Load(rawModel.sModelName, rawModel.width, rawModel.height, rawModel.numCuts);
+        rawModel->Load(rawModel->sModelName, rawModel->width, rawModel->height, rawModel->numCuts);
     }
 };
 
-void guiSetup(sf::RenderWindow &window, UIBuilder &gui)
+void guiSetup(sf::Window &window, UIBuilder &gui)
 {
     gui.init(window.getSize().x, window.getSize().y);
     gui.addBar("Archivo");
     gui.setBarPosition("Archivo", 5, 5);
-    gui.addFileDialogButton("Archivo", "Seleccionar .RAW", &rawModel.sModelName, "");
-    gui.addTextfield("Archivo", "Modelo: ", &rawModel.sModelName, "");
-    gui.addIntegerNumber("Archivo", "Ancho", &rawModel.width, "");
-    gui.addIntegerNumber("Archivo", "Largo", &rawModel.height, "");
-    gui.addIntegerNumber("Archivo", "Cortes", &rawModel.numCuts, "");
+    gui.addFileDialogButton("Archivo", "Seleccionar .RAW", rawModel->sModelName, "");
+    gui.addTextfield("Archivo", "Modelo: ", &rawModel->sModelName, "");
+    gui.addIntegerNumber("Archivo", "Ancho", &rawModel->width, "");
+    gui.addIntegerNumber("Archivo", "Largo", &rawModel->height, "");
+    gui.addIntegerNumber("Archivo", "Cortes", &rawModel->numCuts, "");
     gui.addButton("Archivo", "Cargar Modelo Seleccionado", Callbacks::loadModelClick, NULL, "");
 }
 
-void Render(sf::RenderWindow &window, sf::Clock &clock)
+void Render(sf::Window &window, sf::Clock &clock)
 {
     while (window.isOpen())
     {
@@ -112,6 +108,8 @@ void Render(sf::RenderWindow &window, sf::Clock &clock)
 
             if (event.type == sf::Event::Closed)
             {
+                // TODO Clear Memory
+                rawModel->isLoaded = false;
                 window.close();
             }
             else if (event.type == sf::Event::Resized)
@@ -130,38 +128,7 @@ void Render(sf::RenderWindow &window, sf::Clock &clock)
         glRotatef(clock.getElapsedTime().asSeconds() * 50, 1.f, 0.f, 0.f);
         glRotatef(clock.getElapsedTime().asSeconds() * 30, 0.f, 1.f, 0.f);
         glRotatef(clock.getElapsedTime().asSeconds() * 90, 0.f, 0.f, 1.f);
-        glBegin(GL_QUADS);
-        glColor3f(0.0f, 1.0f, 0.0f);	// Color Blue
-        glVertex3f(1.0f, 1.0f, -1.0f);	// Top Right Of The Quad (Top)
-        glVertex3f(-1.0f, 1.0f, -1.0f);	// Top Left Of The Quad (Top)
-        glVertex3f(-1.0f, 1.0f, 1.0f);	// Bottom Left Of The Quad (Top)
-        glVertex3f(1.0f, 1.0f, 1.0f);	// Bottom Right Of The Quad (Top)
-        glColor3f(1.0f, 0.5f, 0.0f);	// Color Orange
-        glVertex3f(1.0f, -1.0f, 1.0f);	// Top Right Of The Quad (Bottom)
-        glVertex3f(-1.0f, -1.0f, 1.0f);	// Top Left Of The Quad (Bottom)
-        glVertex3f(-1.0f, -1.0f, -1.0f);	// Bottom Left Of The Quad (Bottom)
-        glVertex3f(1.0f, -1.0f, -1.0f);	// Bottom Right Of The Quad (Bottom)
-        glColor3f(1.0f, 0.0f, 0.0f);	// Color Red
-        glVertex3f(1.0f, 1.0f, 1.0f);	// Top Right Of The Quad (Front)
-        glVertex3f(-1.0f, 1.0f, 1.0f);	// Top Left Of The Quad (Front)
-        glVertex3f(-1.0f, -1.0f, 1.0f);	// Bottom Left Of The Quad (Front)
-        glVertex3f(1.0f, -1.0f, 1.0f);	// Bottom Right Of The Quad (Front)
-        glColor3f(1.0f, 1.0f, 0.0f);	// Color Yellow
-        glVertex3f(1.0f, -1.0f, -1.0f);	// Top Right Of The Quad (Back)
-        glVertex3f(-1.0f, -1.0f, -1.0f);	// Top Left Of The Quad (Back)
-        glVertex3f(-1.0f, 1.0f, -1.0f);	// Bottom Left Of The Quad (Back)
-        glVertex3f(1.0f, 1.0f, -1.0f);	// Bottom Right Of The Quad (Back)
-        glColor3f(0.0f, 0.0f, 1.0f);	// Color Blue
-        glVertex3f(-1.0f, 1.0f, 1.0f);	// Top Right Of The Quad (Left)
-        glVertex3f(-1.0f, 1.0f, -1.0f);	// Top Left Of The Quad (Left)
-        glVertex3f(-1.0f, -1.0f, -1.0f);	// Bottom Left Of The Quad (Left)
-        glVertex3f(-1.0f, -1.0f, 1.0f);	// Bottom Right Of The Quad (Left)
-        glColor3f(1.0f, 0.0f, 1.0f);	// Color Violet
-        glVertex3f(1.0f, 1.0f, -1.0f);	// Top Right Of The Quad (Right)
-        glVertex3f(1.0f, 1.0f, 1.0f);	// Top Left Of The Quad (Right)
-        glVertex3f(1.0f, -1.0f, 1.0f);	// Bottom Left Of The Quad (Right)
-        glVertex3f(1.0f, -1.0f, -1.0f);	// Bottom Right Of The Quad (Right)
-        glEnd();
+        rawModel->render();
         // Draw UI
         TwDraw();
         // End Frame
