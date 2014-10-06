@@ -113,7 +113,7 @@ void UIBuilder::addFileDialogButton(std::string sBarName, std::string sLabelText
 
 void TW_CALL fileDialogButtonOnCB(void * clientData)
 {
-    struct OpenFileDialog   // struct's as good as class
+    struct OpenFileDialog
     {
         static void show(char * sFilePath)
         {

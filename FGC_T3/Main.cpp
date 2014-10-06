@@ -78,7 +78,7 @@ struct Callbacks
 {
     static void TW_CALL loadModelClick(void * clientData)
     {
-        rawModel->Load(rawModel->sModelName, rawModel->width, rawModel->height, rawModel->numCuts);
+        rawModel->load(rawModel->sModelName, rawModel->width, rawModel->height, rawModel->numCuts);
     }
 };
 
@@ -124,7 +124,7 @@ void Render(sf::Window &window, sf::Clock &clock)
         // Render OpenGL
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        glTranslatef(0.f, 0.f, -7.f);
+        glTranslatef(0.f, 0.f, -3.f);
         glRotatef(clock.getElapsedTime().asSeconds() * 50, 1.f, 0.f, 0.f);
         glRotatef(clock.getElapsedTime().asSeconds() * 30, 0.f, 1.f, 0.f);
         glRotatef(clock.getElapsedTime().asSeconds() * 90, 0.f, 0.f, 1.f);

@@ -136,6 +136,12 @@
     <ClInclude Include="RawDataModel.h" />
     <ClInclude Include="UIBuilder.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\backface.frag" />
+    <None Include="Shaders\backface.vert" />
+    <None Include="Shaders\raycasting.frag" />
+    <None Include="Shaders\raycasting.vert" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
