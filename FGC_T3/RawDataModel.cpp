@@ -1,10 +1,13 @@
 #include "RawDataModel.h"
+#include "GL\glm\glm.hpp"
+#include "GL\glm\gtc\matrix_transform.hpp"
 
 RawDataModel::RawDataModel(void)
 {
     isLoaded = false;
     sModelName = (char *)calloc(1024, sizeof(char));
     width = height = numCuts = 1;
+    stepSize = 0.001f;
     initShaders();
     _initTransferFunc1DTex();
 }
@@ -104,7 +107,20 @@ void RawDataModel::render()
 {
     if (isLoaded)
     {
+        glEnable(GL_DEPTH_TEST);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _frameBuffer);
+        glViewport(0, 0, MainData::rootWindow->getSize().x, MainData::rootWindow->getSize().y);
+        linkShaderBackface();
+        enableShader();
         _renderCubeFace(GL_FRONT);
+        disableShader();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, MainData::rootWindow->getSize().x, MainData::rootWindow->getSize().y);
+        linkShaderRayCasting();
+        enableShader();
+        rcSetUinforms(stepSize, _tFunc1DTex, _backFace2DTex, _volume3DTex);
+        _renderCubeFace(GL_BACK);
+        disableShader();
     }
 }
 
@@ -158,9 +174,9 @@ bool RawDataModel::_init3DVolumeTex(const char * pszFilepath, int width, int hei
     }
 
     fclose(fp);
-    glGenTextures(1, &_gVolume3DTexObj);
+    glGenTextures(1, &_volume3DTex);
     // bind 3D texture target
-    glBindTexture(GL_TEXTURE_3D, _gVolume3DTexObj);
+    glBindTexture(GL_TEXTURE_3D, _volume3DTex);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -200,6 +216,31 @@ bool RawDataModel::_initFrameBuffer()
 
 void RawDataModel::_renderCubeFace(GLenum gCullFace)
 {
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //  transform the box
+    glm::mat4 projection = glm::perspective(90.0f, (GLfloat)MainData::rootWindow->getSize().x / MainData::rootWindow->getSize().y, 1.0f, 500.f);
+    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 50, glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 30, glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 90, glm::vec3(1.0f, 0.0f, 1.0f));
+    // to make the "head256.raw" i.e. the volume data stand up.
+    model = glm::rotate(model, 90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    // notice the multiplication order: reverse order of transform
+    glm::mat4 mvp = projection * view * model;
+    GLuint mvpIdx = glGetUniformLocation(programHandle, "MVP");
+
+    if (mvpIdx >= 0)
+    {
+        glUniformMatrix4fv(mvpIdx, 1, GL_FALSE, &mvp[0][0]);
+    }
+    else
+    {
+        std::cerr << "can't get the MVP" << std::endl;
+    }
+
     glEnable(GL_CULL_FACE);
     glCullFace(gCullFace);
     glBindVertexArray(_gVao);

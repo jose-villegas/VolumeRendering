@@ -32,6 +32,7 @@ int main()
     // Setup MainEngine to hold important shader data
     rawModel = new RawDataModel();
     MainData::rootWindow = &window;
+    MainData::mainClock = &clock;
     // Setup AntTweakBar for GUI
     guiSetup(window, gui);
     // Setup OpenGL to Current Context
@@ -56,7 +57,7 @@ void openglSetup(sf::VideoMode desktop)
 {
     // Set color and depth clear value
     glClearDepth(1.f);
-    glClearColor(0.f, 0.f, 0.f, 0.f);
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     // Enable Z-buffer read and write
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -128,10 +129,9 @@ void Render(sf::Window &window, sf::Clock &clock)
         // Render OpenGL
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        glTranslatef(0.f, 0.f, -3.f);
-        glRotatef(clock.getElapsedTime().asSeconds() * 50, 1.f, 0.f, 0.f);
-        glRotatef(clock.getElapsedTime().asSeconds() * 30, 0.f, 1.f, 0.f);
-        glRotatef(clock.getElapsedTime().asSeconds() * 90, 0.f, 0.f, 1.f);
+        //glRotatef(clock.getElapsedTime().asSeconds() * 50, 1.f, 0.f, 0.f);
+        //glRotatef(clock.getElapsedTime().asSeconds() * 30, 0.f, 1.f, 0.f);
+        //glRotatef(clock.getElapsedTime().asSeconds() * 90, 0.f, 0.f, 1.f);
         rawModel->render();
         // Draw UI
         TwDraw();

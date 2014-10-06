@@ -8,7 +8,7 @@ class RawDataModel: VolumeShader
     private:
         GLuint _tFunc1DTex;
         GLuint _backFace2DTex;
-        GLuint _gVolume3DTexObj;
+        GLuint _volume3DTex;
         GLuint _depthRenderBuffer;
         GLuint _frameBuffer;
         GLuint _gVao;
@@ -25,6 +25,7 @@ class RawDataModel: VolumeShader
         int width;
         int height;
         int numCuts;
+        float stepSize;
 
         void load(const char * pszFilepath, int width, int height, int numCuts);
         void render();

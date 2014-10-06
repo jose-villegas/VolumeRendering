@@ -6,5 +6,6 @@ class MainData
     public:
         //static RawDataModel * currentModel;
         static sf::Window * rootWindow;
+        static sf::Clock * mainClock;
 };
 

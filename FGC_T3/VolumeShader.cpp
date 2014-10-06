@@ -1,4 +1,5 @@
 #include "VolumeShader.h"
+#include "MainData.h"
 
 
 VolumeShader::VolumeShader(void)
@@ -112,4 +113,155 @@ GLuint VolumeShader::createShaderPgm()
     }
 
     return programHandle;
+}
+
+void VolumeShader::linkShader(GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHandle)
+{
+    const GLsizei maxCount = 2;
+    GLsizei count;
+    GLuint shaders[maxCount];
+    glGetAttachedShaders(shaderPgm, maxCount, &count, shaders);
+    // cout << "get VertHandle: " << shaders[0] << endl;
+    // cout << "get FragHandle: " << shaders[1] << endl;
+
+    for (int i = 0; i < count; i++)
+    {
+        glDetachShader(shaderPgm, shaders[i]);
+    }
+
+    // Bind index 0 to the shader input variable "VerPos"
+    glBindAttribLocation(shaderPgm, 0, "VerPos");
+    // Bind index 1 to the shader input variable "VerClr"
+    glBindAttribLocation(shaderPgm, 1, "VerClr");
+    glAttachShader(shaderPgm, newVertHandle);
+    glAttachShader(shaderPgm, newFragHandle);
+    glLinkProgram(shaderPgm);
+
+    if (GL_FALSE == checkShaderLinkStatus(shaderPgm))
+    {
+        std::cerr << "Failed to relink shader program!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+GLint VolumeShader::checkShaderLinkStatus(GLuint pgmHandle)
+{
+    GLint status;
+    glGetProgramiv(pgmHandle, GL_LINK_STATUS, &status);
+
+    if (GL_FALSE == status)
+    {
+        GLint logLen;
+        glGetProgramiv(pgmHandle, GL_INFO_LOG_LENGTH, &logLen);
+
+        if (logLen > 0)
+        {
+            GLchar * log = (GLchar *)malloc(logLen);
+            GLsizei written;
+            glGetProgramInfoLog(pgmHandle, logLen, &written, log);
+            std::cerr << "Program log: " << log << std::endl;
+        }
+    }
+
+    return status;
+}
+
+void VolumeShader::linkShaderBackface()
+{
+    linkShader(programHandle, bfVertHandle, bfFragHandle);
+}
+
+void VolumeShader::linkShaderRayCasting()
+{
+    linkShader(programHandle, rcVertHandle, rcFragHandle);
+}
+
+void VolumeShader::enableShader()
+{
+    glUseProgram(programHandle);
+}
+
+void VolumeShader::disableShader()
+{
+    glUseProgram(0);
+}
+
+void VolumeShader::rcSetUinforms(float stepSize, GLuint tFunc1DTex, GLuint backFace2DTex, GLuint volume3DTex)
+{
+    // setting uniforms such as
+    // ScreenSize
+    // StepSize
+    // TransferFunc
+    // ExitPoints i.e. the backface, the backface hold the ExitPoints of ray casting
+    // VolumeTex the texture that hold the volume data i.e. head256.raw
+    GLint screenSizeLoc = glGetUniformLocation(programHandle, "ScreenSize");
+
+    if (screenSizeLoc >= 0)
+    {
+        glUniform2f(screenSizeLoc, (float)MainData::rootWindow->getSize().x, (float)MainData::rootWindow->getSize().y);
+    }
+    else
+    {
+        std::cout << "ScreenSize"
+                  << "is not bind to the uniform"
+                  << std::endl;
+    }
+
+    GLint stepSizeLoc = glGetUniformLocation(programHandle, "StepSize");
+
+    if (stepSizeLoc >= 0)
+    {
+        glUniform1f(stepSizeLoc, stepSize);
+    }
+    else
+    {
+        std::cout << "StepSize"
+                  << "is not bind to the uniform"
+                  << std::endl;
+    }
+
+    GLint transferFuncLoc = glGetUniformLocation(programHandle, "TransferFunc");
+
+    if (transferFuncLoc >= 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_1D, tFunc1DTex);
+        glUniform1i(transferFuncLoc, 0);
+    }
+    else
+    {
+        std::cout << "TransferFunc"
+                  << "is not bind to the uniform"
+                  << std::endl;
+    }
+
+    GLint backFaceLoc = glGetUniformLocation(programHandle, "ExitPoints");
+
+    if (backFaceLoc >= 0)
+    {
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, backFace2DTex);
+        glUniform1i(backFaceLoc, 1);
+    }
+    else
+    {
+        std::cout << "ExitPoints"
+                  << "is not bind to the uniform"
+                  << std::endl;
+    }
+
+    GLint volumeLoc = glGetUniformLocation(programHandle, "VolumeTex");
+
+    if (volumeLoc >= 0)
+    {
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_3D, volume3DTex);
+        glUniform1i(volumeLoc, 2);
+    }
+    else
+    {
+        std::cout << "VolumeTex"
+                  << "is not bind to the uniform"
+                  << std::endl;
+    }
 }
