@@ -1,16 +1,20 @@
 #pragma once
 #include "commons.h"
+#include "MainData.h"
+#include "VolumeShader.h"
 
-class RawDataModel
+class RawDataModel: VolumeShader
 {
     private:
-        GLuint _gVolumeTexObj;
+        GLuint _tFunc1DTex;
         GLuint _backFace2DTex;
+        GLuint _gVolume3DTexObj;
         GLuint _depthRenderBuffer;
         GLuint _frameBuffer;
         GLuint _gVao;
 
         bool _initVBO();
+        void _initTransferFunc1DTex();
         bool _init2DBackfaceTex();
         bool _init3DVolumeTex(const char * pszFilepath, int width, int height, int numCuts);
         bool _initFrameBuffer();

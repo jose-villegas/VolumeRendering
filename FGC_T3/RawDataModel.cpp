@@ -1,11 +1,12 @@
 #include "RawDataModel.h"
-#include <direct.h>
 
 RawDataModel::RawDataModel(void)
 {
     isLoaded = false;
     sModelName = (char *)calloc(1024, sizeof(char));
     width = height = numCuts = 1;
+    initShaders();
+    _initTransferFunc1DTex();
 }
 
 
@@ -18,7 +19,9 @@ RawDataModel::~RawDataModel(void)
 void RawDataModel::load(const char * pszFilepath, int width, int height, int numCuts)
 {
     isLoaded = false;
-    memcpy(sModelName, pszFilepath, 1024);
+
+    // Initialize VBO for rendering Volume
+    if (!_initVBO()) { return; }
 
     // Load Volume data on 3D texture
     if (!_init3DVolumeTex(pszFilepath, width, height, numCuts)) { return; }
@@ -26,12 +29,14 @@ void RawDataModel::load(const char * pszFilepath, int width, int height, int num
     // Initialize texture for backface
     if (!_init2DBackfaceTex()) { return; }
 
-    // Initialize VBO for rendering Volume
-    if (!_initVBO()) { return; }
-
     // Initialize FBO
     if (!_initFrameBuffer()) { return; }
 
+    // Success
+    this->width = width;
+    this->height = height;
+    this->numCuts = numCuts;
+    memcpy(sModelName, pszFilepath, 1024);
     isLoaded = true;
 }
 
@@ -108,15 +113,13 @@ bool RawDataModel::_init2DBackfaceTex()
     try
     {
         // Backface Texture
-        int viewport[4];
-        glGetIntegerv(GL_VIEWPORT, &viewport[0]);
         glGenTextures(1, &_backFace2DTex);
         glBindTexture(GL_TEXTURE_2D, _backFace2DTex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, viewport[2], viewport[3], 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, MainData::rootWindow->getSize().x, MainData::rootWindow->getSize().y, 0, GL_RGBA, GL_FLOAT, NULL);
     }
     catch (...)
     {
@@ -155,9 +158,9 @@ bool RawDataModel::_init3DVolumeTex(const char * pszFilepath, int width, int hei
     }
 
     fclose(fp);
-    glGenTextures(1, &_gVolumeTexObj);
+    glGenTextures(1, &_gVolume3DTexObj);
     // bind 3D texture target
-    glBindTexture(GL_TEXTURE_3D, _gVolumeTexObj);
+    glBindTexture(GL_TEXTURE_3D, _gVolume3DTexObj);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -173,11 +176,9 @@ bool RawDataModel::_init3DVolumeTex(const char * pszFilepath, int width, int hei
 
 bool RawDataModel::_initFrameBuffer()
 {
-    int viewport[4];
-    glGetIntegerv(GL_VIEWPORT, &viewport[0]);
     glGenRenderbuffers(1, &_depthRenderBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, _depthRenderBuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, viewport[2], viewport[3]);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, MainData::rootWindow->getSize().x, MainData::rootWindow->getSize().y);
     // attach the texture and the depth buffer to the framebuffer
     glGenFramebuffers(1, &_frameBuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, _frameBuffer);
@@ -204,4 +205,44 @@ void RawDataModel::_renderCubeFace(GLenum gCullFace)
     glBindVertexArray(_gVao);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (GLuint *)NULL);
     glDisable(GL_CULL_FACE);
+}
+
+void RawDataModel::_initTransferFunc1DTex()
+{
+    std::ifstream inFile("tff.dat", std::ifstream::in);
+
+    if (!inFile)
+    {
+        std::cerr << "Error openning file: " << "tff.dat" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    const int MAX_CNT = 10000;
+    GLubyte * tff = (GLubyte *) calloc(MAX_CNT, sizeof(GLubyte));
+    inFile.read(reinterpret_cast<char *>(tff), MAX_CNT);
+
+    if (inFile.eof())
+    {
+        size_t bytecnt = inFile.gcount();
+        *(tff + bytecnt) = '\0';
+        std::cout << "bytecnt " << bytecnt << std::endl;
+    }
+    else if (inFile.fail())
+    {
+        std::cout << "tff.dat" << "read failed " << std::endl;
+    }
+    else
+    {
+        std::cout << "tff.dat" << "is too large" << std::endl;
+    }
+
+    GLuint tff1DTex;
+    glGenTextures(1, &tff1DTex);
+    glBindTexture(GL_TEXTURE_1D, tff1DTex);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, tff);
+    free(tff);
 }

@@ -128,13 +128,17 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MainData.cpp" />
     <ClCompile Include="RawDataModel.cpp" />
     <ClCompile Include="UIBuilder.cpp" />
+    <ClCompile Include="VolumeShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commons.h" />
+    <ClInclude Include="MainData.h" />
     <ClInclude Include="RawDataModel.h" />
     <ClInclude Include="UIBuilder.h" />
+    <ClInclude Include="VolumeShader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\backface.frag" />

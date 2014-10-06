@@ -1,6 +1,7 @@
 #include "commons.h"
 #include "UIBuilder.h"
 #include "RawDataModel.h"
+#include "MainData.h"
 #define WINDOW_OFFSET 200
 
 // OpenGL Setup Before Rendering to Context
@@ -14,7 +15,7 @@ void guiSetup(sf::Window &window, UIBuilder &gui);
 // Main Render-Logic Loop
 void Render(sf::Window &window, sf::Clock &clock);
 // Active Volume Data
-RawDataModel * rawModel = new RawDataModel();
+RawDataModel * rawModel;
 
 int main()
 {
@@ -28,6 +29,9 @@ int main()
     window.setActive(true);
     // Initialize GLEW
     initGlew();
+    // Setup MainEngine to hold important shader data
+    rawModel = new RawDataModel();
+    MainData::rootWindow = &window;
     // Setup AntTweakBar for GUI
     guiSetup(window, gui);
     // Setup OpenGL to Current Context
