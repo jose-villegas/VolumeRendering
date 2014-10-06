@@ -64,7 +64,7 @@ void openglSetup(sf::VideoMode desktop)
     // Setup a perspective projection
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(90.f, desktop.width / desktop.height, 1.f, 500.f);
+    gluPerspective(60.f, desktop.width / desktop.height, 0.1f, 400.f);
 }
 
 void initGlew()
@@ -126,12 +126,9 @@ void Render(sf::Window &window, sf::Clock &clock)
 
         // clear the buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // Render OpenGL
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        //glRotatef(clock.getElapsedTime().asSeconds() * 50, 1.f, 0.f, 0.f);
-        //glRotatef(clock.getElapsedTime().asSeconds() * 30, 0.f, 1.f, 0.f);
-        //glRotatef(clock.getElapsedTime().asSeconds() * 90, 0.f, 0.f, 1.f);
+        // Render OpenGL
         rawModel->render();
         // Draw UI
         TwDraw();

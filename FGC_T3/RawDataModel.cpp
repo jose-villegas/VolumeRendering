@@ -216,18 +216,16 @@ bool RawDataModel::_initFrameBuffer()
 
 void RawDataModel::_renderCubeFace(GLenum gCullFace)
 {
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //  transform the box
-    glm::mat4 projection = glm::perspective(90.0f, (GLfloat)MainData::rootWindow->getSize().x / MainData::rootWindow->getSize().y, 1.0f, 500.f);
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 projection = glm::perspective(60.0f, (GLfloat)MainData::rootWindow->getSize().x / MainData::rootWindow->getSize().y, 0.1f, 400.f);
+    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 50, glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 30, glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 90, glm::vec3(1.0f, 0.0f, 1.0f));
+    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 30, glm::vec3(0.0f, 1.0f, 0.0f));
     // to make the "head256.raw" i.e. the volume data stand up.
-    model = glm::rotate(model, 90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    //model = glm::rotate(model, 90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(-0.5f, -0.5f, -0.5f));
     // notice the multiplication order: reverse order of transform
     glm::mat4 mvp = projection * view * model;
     GLuint mvpIdx = glGetUniformLocation(programHandle, "MVP");
@@ -277,9 +275,8 @@ void RawDataModel::_initTransferFunc1DTex()
         std::cout << "tff.dat" << "is too large" << std::endl;
     }
 
-    GLuint tff1DTex;
-    glGenTextures(1, &tff1DTex);
-    glBindTexture(GL_TEXTURE_1D, tff1DTex);
+    glGenTextures(1, &_tFunc1DTex);
+    glBindTexture(GL_TEXTURE_1D, _tFunc1DTex);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
