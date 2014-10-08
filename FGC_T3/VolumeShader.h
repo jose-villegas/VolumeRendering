@@ -21,6 +21,12 @@ class VolumeShader
         void linkShaderRayCasting();
         GLint checkShaderLinkStatus(GLuint pgmHandle);
     private:
+        GLint screenSizeLoc;
+        GLint stepSizeLoc;
+        GLint transferFuncLoc;
+        GLint backFaceLoc;
+        GLint volumeLoc;
+
         GLuint initShaderObj(const GLchar * srcfile, GLenum shaderType);
         GLboolean compileCheck(GLuint shader);
         GLuint createShaderPgm();

@@ -4,6 +4,11 @@
 
 VolumeShader::VolumeShader(void)
 {
+    screenSizeLoc = -1;
+    stepSizeLoc = -1;
+    transferFuncLoc = -1;
+    backFaceLoc = -1;
+    volumeLoc = -1;
 }
 
 
@@ -194,7 +199,15 @@ void VolumeShader::rcSetUinforms(float stepSize, GLuint tFunc1DTex, GLuint backF
     // TransferFunc
     // ExitPoints i.e. the backface, the backface hold the ExitPoints of ray casting
     // VolumeTex the texture that hold the volume data i.e. head256.raw
-    GLint screenSizeLoc = glGetUniformLocation(programHandle, "ScreenSize");
+    if (screenSizeLoc == -1) { screenSizeLoc = glGetUniformLocation(programHandle, "ScreenSize"); }
+
+    if (stepSizeLoc == -1) { stepSizeLoc = glGetUniformLocation(programHandle, "StepSize"); }
+
+    if (transferFuncLoc == -1) { transferFuncLoc = glGetUniformLocation(programHandle, "TransferFunc"); }
+
+    if (backFaceLoc == -1) { backFaceLoc = glGetUniformLocation(programHandle, "ExitPoints"); }
+
+    if (volumeLoc == -1) { volumeLoc = glGetUniformLocation(programHandle, "VolumeTex"); }
 
     if (screenSizeLoc >= 0)
     {
@@ -202,12 +215,8 @@ void VolumeShader::rcSetUinforms(float stepSize, GLuint tFunc1DTex, GLuint backF
     }
     else
     {
-        std::cout << "ScreenSize"
-                  << "is not bind to the uniform"
-                  << std::endl;
+        std::cout << "ScreenSize" << "is not bind to the uniform" << std::endl;
     }
-
-    GLint stepSizeLoc = glGetUniformLocation(programHandle, "StepSize");
 
     if (stepSizeLoc >= 0)
     {
@@ -215,12 +224,8 @@ void VolumeShader::rcSetUinforms(float stepSize, GLuint tFunc1DTex, GLuint backF
     }
     else
     {
-        std::cout << "StepSize"
-                  << "is not bind to the uniform"
-                  << std::endl;
+        std::cout << "StepSize" << "is not bind to the uniform" << std::endl;
     }
-
-    GLint transferFuncLoc = glGetUniformLocation(programHandle, "TransferFunc");
 
     if (transferFuncLoc >= 0)
     {
@@ -230,12 +235,8 @@ void VolumeShader::rcSetUinforms(float stepSize, GLuint tFunc1DTex, GLuint backF
     }
     else
     {
-        std::cout << "TransferFunc"
-                  << "is not bind to the uniform"
-                  << std::endl;
+        std::cout << "TransferFunc" << "is not bind to the uniform" << std::endl;
     }
-
-    GLint backFaceLoc = glGetUniformLocation(programHandle, "ExitPoints");
 
     if (backFaceLoc >= 0)
     {
@@ -245,12 +246,8 @@ void VolumeShader::rcSetUinforms(float stepSize, GLuint tFunc1DTex, GLuint backF
     }
     else
     {
-        std::cout << "ExitPoints"
-                  << "is not bind to the uniform"
-                  << std::endl;
+        std::cout << "ExitPoints" << "is not bind to the uniform" << std::endl;
     }
-
-    GLint volumeLoc = glGetUniformLocation(programHandle, "VolumeTex");
 
     if (volumeLoc >= 0)
     {
@@ -260,8 +257,6 @@ void VolumeShader::rcSetUinforms(float stepSize, GLuint tFunc1DTex, GLuint backF
     }
     else
     {
-        std::cout << "VolumeTex"
-                  << "is not bind to the uniform"
-                  << std::endl;
+        std::cout << "VolumeTex" << "is not bind to the uniform" << std::endl;
     }
 }

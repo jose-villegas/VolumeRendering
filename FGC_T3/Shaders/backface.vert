@@ -8,7 +8,6 @@ out vec3 Color;
 
 uniform mat4 MVP;
 
-
 void main()
 {
     Color = VerClr;

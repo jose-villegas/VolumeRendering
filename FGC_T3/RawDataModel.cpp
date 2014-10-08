@@ -1,6 +1,5 @@
 #include "RawDataModel.h"
-#include "GL\glm\glm.hpp"
-#include "GL\glm\gtc\matrix_transform.hpp"
+
 
 RawDataModel::RawDataModel(void)
 {
@@ -8,6 +7,7 @@ RawDataModel::RawDataModel(void)
     sModelName = (char *)calloc(1024, sizeof(char));
     width = height = numCuts = 1;
     stepSize = 0.001f;
+    rotation = glm::quat_cast(glm::mat4x4(1));
     initShaders();
     _initTransferFunc1DTex();
 }
@@ -107,7 +107,6 @@ void RawDataModel::render()
 {
     if (isLoaded)
     {
-        glEnable(GL_DEPTH_TEST);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _frameBuffer);
         glViewport(0, 0, MainData::rootWindow->getSize().x, MainData::rootWindow->getSize().y);
         linkShaderBackface();
@@ -216,16 +215,15 @@ bool RawDataModel::_initFrameBuffer()
 
 void RawDataModel::_renderCubeFace(GLenum gCullFace)
 {
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //  transform the box
-    glm::mat4 projection = glm::perspective(60.0f, (GLfloat)MainData::rootWindow->getSize().x / MainData::rootWindow->getSize().y, 0.1f, 400.f);
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 30, glm::vec3(0.0f, 1.0f, 0.0f));
-    // to make the "head256.raw" i.e. the volume data stand up.
-    //model = glm::rotate(model, 90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::translate(model, glm::vec3(-0.5f, -0.5f, -0.5f));
+    glm::mat4 projection = glm::perspective(90.0f, (GLfloat)MainData::rootWindow->getSize().x / MainData::rootWindow->getSize().y, 0.1f, 500.f);
+    glm::mat4 view = Camera::getViewMatrix();
+    glm::mat4 model = glm::mat4_cast(rotation);
+    // model = glm::rotate(model, MainData::mainClock->getElapsedTime().asSeconds() * 30, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::vec3 normalizedBBox = glm::vec3(width / numCuts, height / numCuts, numCuts / numCuts);
+    model = glm::translate(model, glm::vec3(-normalizedBBox.x / 2, -normalizedBBox.y / 2, -normalizedBBox.z / 2));
+    model = glm::scale(model, normalizedBBox);
     // notice the multiplication order: reverse order of transform
     glm::mat4 mvp = projection * view * model;
     GLuint mvpIdx = glGetUniformLocation(programHandle, "MVP");

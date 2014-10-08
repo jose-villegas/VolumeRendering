@@ -2,6 +2,7 @@
 #include "UIBuilder.h"
 #include "RawDataModel.h"
 #include "MainData.h"
+#include "Camera.h"
 #define WINDOW_OFFSET 200
 
 // OpenGL Setup Before Rendering to Context
@@ -13,18 +14,17 @@ void initGlew();
 // Setup AntTweakBar
 void guiSetup(sf::Window &window, UIBuilder &gui);
 // Main Render-Logic Loop
-void Render(sf::Window &window, sf::Clock &clock);
+void Render(sf::Window &window, sf::Clock &frameClock);
 // Active Volume Data
 RawDataModel * rawModel;
 
 int main()
 {
     UIBuilder gui;
-    sf::Clock clock;
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
     desktop.height = desktop.height - WINDOW_OFFSET;
     desktop.width = desktop.width - WINDOW_OFFSET;
-    sf::Window window(desktop, "SFML works!", sf::Style::Default, openglWindowContext());
+    sf::Window window(desktop, "Volume Rendering!", sf::Style::Default, openglWindowContext());
     gui.setHwnd(window.getSystemHandle()) ;
     window.setActive(true);
     // Initialize GLEW
@@ -32,20 +32,19 @@ int main()
     // Setup MainEngine to hold important shader data
     rawModel = new RawDataModel();
     MainData::rootWindow = &window;
-    MainData::mainClock = &clock;
     // Setup AntTweakBar for GUI
     guiSetup(window, gui);
     // Setup OpenGL to Current Context
     openglSetup(desktop);
     // Initialze Main Loop
-    Render(window, clock);
+    Render(window, *MainData::frameClock);
     return 0;
 }
 
 sf::ContextSettings openglWindowContext()
 {
     sf::ContextSettings settings;
-    settings.depthBits = 24;
+    settings.depthBits = 8;
     settings.stencilBits = 8;
     settings.antialiasingLevel = 0;
     settings.majorVersion = 3;
@@ -55,16 +54,6 @@ sf::ContextSettings openglWindowContext()
 
 void openglSetup(sf::VideoMode desktop)
 {
-    // Set color and depth clear value
-    glClearDepth(1.f);
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-    // Enable Z-buffer read and write
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    // Setup a perspective projection
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(60.f, desktop.width / desktop.height, 0.1f, 400.f);
 }
 
 void initGlew()
@@ -92,15 +81,34 @@ void guiSetup(sf::Window &window, UIBuilder &gui)
     gui.init(window.getSize().x, window.getSize().y);
     gui.addBar("Archivo");
     gui.setBarPosition("Archivo", 5, 5);
+    gui.setBarSize("Archivo", 200, 130);
     gui.addFileDialogButton("Archivo", "Seleccionar .RAW", rawModel->sModelName, "");
     gui.addTextfield("Archivo", "Modelo: ", &rawModel->sModelName, "");
     gui.addIntegerNumber("Archivo", "Ancho", &rawModel->width, "");
     gui.addIntegerNumber("Archivo", "Largo", &rawModel->height, "");
     gui.addIntegerNumber("Archivo", "Cortes", &rawModel->numCuts, "");
     gui.addButton("Archivo", "Cargar Modelo Seleccionado", Callbacks::loadModelClick, NULL, "");
+    // Camera Controls
+    struct Point { float X, Y, Z; };
+    TwStructMember pointMembers[] =
+    {
+        { "X", TW_TYPE_FLOAT, offsetof(Point, X), " Step=0.001 keyIncr='d' keyDecr='a' "},
+        { "Y", TW_TYPE_FLOAT, offsetof(Point, Y), " Step=0.001 keyIncr='s' keyDecr='w' " },
+        { "Z", TW_TYPE_FLOAT, offsetof(Point, Z), " Step=0.001 keyIncr='+' keyDecr='-' " }
+    };
+    TwType pointType = TwDefineStruct("POINT", pointMembers, 3, sizeof(Point), NULL, NULL);
+    gui.addBar("Camara");
+    gui.setBarPosition("Camara", 5, 140);
+    gui.setBarSize("Camara", 200, 180);
+    gui.addVariable("Camara", "Posicion", pointType, &Camera::position[0], "opened=true");
+    gui.addDirectionControls("Camara", "Direccion", &Camera::direction[0], "opened=true");
+    gui.addBar("Modelo");
+    gui.setBarPosition("Modelo", 5, 325);
+    gui.setBarSize("Modelo", 200, 120);
+    gui.addRotationControls("Modelo", "Rotacion", &rawModel->rotation, "opened=true showval=true");
 }
 
-void Render(sf::Window &window, sf::Clock &clock)
+void Render(sf::Window &window, sf::Clock &frameClock)
 {
     while (window.isOpen())
     {
@@ -109,32 +117,32 @@ void Render(sf::Window &window, sf::Clock &clock)
         while (window.pollEvent(event))
         {
             // Send event to AntTweakBar
-            int handled = TwEventSFML(&event, 1, 6); // Assume SFML version 1.6 here
+            int handled = TwEventSFML(&event, 1, 6);
 
-            if (event.type == sf::Event::Closed)
+            if (!handled)
             {
-                // TODO Clear Memory
-                rawModel->isLoaded = false;
-                window.close();
-            }
-            else if (event.type == sf::Event::Resized)
-            {
-                // adjust the viewport when the window is resized
-                glViewport(0, 0, event.size.width, event.size.height);
+                if (event.type == sf::Event::Closed)
+                {
+                    // TODO Clear Memory
+                    rawModel->isLoaded = false;
+                    window.close();
+                }
+                else if (event.type == sf::Event::Resized)
+                {
+                    // adjust the viewport when the window is resized
+                    glViewport(0, 0, event.size.width, event.size.height);
+                }
             }
         }
 
         // clear the buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
         // Render OpenGL
         rawModel->render();
         // Draw UI
         TwDraw();
         // End Frame
         window.display();
+        frameClock.restart();
     }
 }
-
-

@@ -27,13 +27,13 @@
     <ClCompile Include="UIBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\GitHub\Volume_Rendering_Using_GLSL\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VolumeShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MainData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,18 +53,21 @@
     <ClInclude Include="MainData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\backface.frag">
+    <None Include="Shaders\raycasting.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\raycasting.vert">
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\backface.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\raycasting.frag">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\raycasting.vert">
+    <None Include="Shaders\backface.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

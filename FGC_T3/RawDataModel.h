@@ -2,6 +2,10 @@
 #include "commons.h"
 #include "MainData.h"
 #include "VolumeShader.h"
+#include "GL\glm\glm.hpp"
+#include "GL\glm\gtc\matrix_transform.hpp"
+#include "GL\glm\gtc\quaternion.hpp"
+#include "Camera.h"
 
 class RawDataModel: VolumeShader
 {
@@ -26,6 +30,7 @@ class RawDataModel: VolumeShader
         int height;
         int numCuts;
         float stepSize;
+        glm::quat rotation;
 
         void load(const char * pszFilepath, int width, int height, int numCuts);
         void render();
