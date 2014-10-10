@@ -42,6 +42,9 @@ int main()
     openglSetup(desktop);
     // Initialze Main Loop
     Render(window, *MainData::frameClock);
+    // Free Memory
+    //delete rawModel;
+    //delete eWindow;
     return 0;
 }
 
@@ -132,7 +135,6 @@ void Render(sf::Window &window, sf::Clock &frameClock)
             {
                 if (event.type == sf::Event::Closed)
                 {
-                    // TODO Clear Memory
                     rawModel->isLoaded = false;
                     window.close();
                 }

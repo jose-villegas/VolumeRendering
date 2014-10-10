@@ -1,13 +1,17 @@
 #pragma once
 #include "commons.h"
 #include "RawDataModel.h"
+#include "UIBuilder.h"
 
 class EditingWindow
 {
     private:
         RawDataModel * rawModel;
         std::thread * windowThread;
-        std::array<int, 256> histogram;
+        UIBuilder gui;
+        std::array<float, 256> histogram;
+        sf::RectangleShape line[256];
+        bool isHistLoaded;
 
         static void _windowRender(EditingWindow * eWin);
     public:
