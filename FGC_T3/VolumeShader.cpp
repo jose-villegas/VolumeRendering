@@ -126,8 +126,6 @@ void VolumeShader::linkShader(GLuint shaderPgm, GLuint newVertHandle, GLuint new
     GLsizei count;
     GLuint shaders[maxCount];
     glGetAttachedShaders(shaderPgm, maxCount, &count, shaders);
-    // cout << "get VertHandle: " << shaders[0] << endl;
-    // cout << "get FragHandle: " << shaders[1] << endl;
 
     for (int i = 0; i < count; i++)
     {

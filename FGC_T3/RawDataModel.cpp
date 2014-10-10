@@ -16,6 +16,7 @@ RawDataModel::RawDataModel(void)
 RawDataModel::~RawDataModel(void)
 {
     isLoaded = false;
+    free(data);
     free(sModelName);
 }
 
@@ -148,7 +149,13 @@ bool RawDataModel::_init3DVolumeTex(const char * pszFilepath, int width, int hei
 {
     FILE * fp;
     size_t size = width * height * numCuts;
-    GLubyte * data = new GLubyte[size]; // 8bit
+
+    if (data)
+    {
+        delete []data; // Delete Previous Stored Data
+    }
+
+    data = new GLubyte[size]; // 8bit
 
     if (!(fp = fopen(pszFilepath, "rb")))
     {
@@ -161,7 +168,7 @@ bool RawDataModel::_init3DVolumeTex(const char * pszFilepath, int width, int hei
         std:: cout << "OK: opening " << pszFilepath << " file successed" << std::endl;
     }
 
-    if (fread(data, sizeof(char), size, fp) != size)
+    if (fread(data, sizeof(GLubyte), size, fp) != size)
     {
         std::cout << "Error: reading " << pszFilepath << " file failed" << std::endl;
         fclose(fp);
@@ -184,7 +191,7 @@ bool RawDataModel::_init3DVolumeTex(const char * pszFilepath, int width, int hei
     // pixel transfer happens here from client to OpenGL server
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage3D(GL_TEXTURE_3D, 0, GL_INTENSITY, width, height, numCuts, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
-    delete []data;
+    //delete []data;
     std::cout << "volume texture created" << std::endl;
     return true;
 }

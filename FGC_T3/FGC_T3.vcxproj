@@ -125,6 +125,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="EditingWindow.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainData.cpp" />
     <ClCompile Include="RawDataModel.cpp" />
@@ -134,6 +135,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="commons.h" />
+    <ClInclude Include="EditingWindow.h" />
     <ClInclude Include="MainData.h" />
     <ClInclude Include="RawDataModel.h" />
     <ClInclude Include="UIBuilder.h" />

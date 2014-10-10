@@ -30,6 +30,7 @@ class RawDataModel: VolumeShader
         int height;
         int numCuts;
         float stepSize;
+        GLubyte * data;
         glm::quat rotation;
 
         void load(const char * pszFilepath, int width, int height, int numCuts);

@@ -3,6 +3,7 @@
 #include "RawDataModel.h"
 #include "MainData.h"
 #include "Camera.h"
+#include "EditingWindow.h"
 #define WINDOW_OFFSET 200
 
 // OpenGL Setup Before Rendering to Context
@@ -17,6 +18,7 @@ void guiSetup(sf::Window &window, UIBuilder &gui);
 void Render(sf::Window &window, sf::Clock &frameClock);
 // Active Volume Data
 RawDataModel * rawModel;
+EditingWindow * eWindow;
 
 int main()
 {
@@ -24,7 +26,7 @@ int main()
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
     desktop.height = desktop.height - WINDOW_OFFSET;
     desktop.width = desktop.width - WINDOW_OFFSET;
-    sf::Window window(desktop, "Volume Rendering!", sf::Style::Default, openglWindowContext());
+    sf::RenderWindow window(desktop, "Volume Rendering!", sf::Style::Default, openglWindowContext());
     gui.setHwnd(window.getSystemHandle()) ;
     window.setActive(true);
     // Initialize GLEW
@@ -32,8 +34,10 @@ int main()
     // Setup MainEngine to hold important shader data
     rawModel = new RawDataModel();
     MainData::rootWindow = &window;
-    // Setup AntTweakBar for GUI
+    // Setup for GUI
+    eWindow = new EditingWindow();
     guiSetup(window, gui);
+    eWindow->init(&window);
     // Setup OpenGL to Current Context
     openglSetup(desktop);
     // Initialze Main Loop
@@ -73,12 +77,24 @@ struct Callbacks
     static void TW_CALL loadModelClick(void * clientData)
     {
         rawModel->load(rawModel->sModelName, rawModel->width, rawModel->height, rawModel->numCuts);
+
+        if (rawModel->isLoaded) { eWindow->loadHistogram(rawModel); }
     }
 };
 
 void guiSetup(sf::Window &window, UIBuilder &gui)
 {
     gui.init(window.getSize().x, window.getSize().y);
+    // Custom Point Type
+    struct Point { float X, Y, Z; };
+    TwStructMember pointMembers[] =
+    {
+        { "X", TW_TYPE_FLOAT, offsetof(Point, X), " Step=0.001 keyIncr='d' keyDecr='a' "},
+        { "Y", TW_TYPE_FLOAT, offsetof(Point, Y), " Step=0.001 keyIncr='s' keyDecr='w' " },
+        { "Z", TW_TYPE_FLOAT, offsetof(Point, Z), " Step=0.001 keyIncr='-' keyDecr='+' " }
+    };
+    TwType pointType = TwDefineStruct("POINT", pointMembers, 3, sizeof(Point), NULL, NULL);
+    // Model Loading
     gui.addBar("Archivo");
     gui.setBarPosition("Archivo", 5, 5);
     gui.setBarSize("Archivo", 200, 130);
@@ -89,19 +105,12 @@ void guiSetup(sf::Window &window, UIBuilder &gui)
     gui.addIntegerNumber("Archivo", "Cortes", &rawModel->numCuts, "");
     gui.addButton("Archivo", "Cargar Modelo Seleccionado", Callbacks::loadModelClick, NULL, "");
     // Camera Controls
-    struct Point { float X, Y, Z; };
-    TwStructMember pointMembers[] =
-    {
-        { "X", TW_TYPE_FLOAT, offsetof(Point, X), " Step=0.001 keyIncr='d' keyDecr='a' "},
-        { "Y", TW_TYPE_FLOAT, offsetof(Point, Y), " Step=0.001 keyIncr='s' keyDecr='w' " },
-        { "Z", TW_TYPE_FLOAT, offsetof(Point, Z), " Step=0.001 keyIncr='+' keyDecr='-' " }
-    };
-    TwType pointType = TwDefineStruct("POINT", pointMembers, 3, sizeof(Point), NULL, NULL);
     gui.addBar("Camara");
     gui.setBarPosition("Camara", 5, 140);
     gui.setBarSize("Camara", 200, 180);
     gui.addVariable("Camara", "Posicion", pointType, &Camera::position[0], "opened=true");
     gui.addDirectionControls("Camara", "Direccion", &Camera::direction[0], "opened=true");
+    // Model Controls
     gui.addBar("Modelo");
     gui.setBarPosition("Modelo", 5, 325);
     gui.setBarSize("Modelo", 200, 120);

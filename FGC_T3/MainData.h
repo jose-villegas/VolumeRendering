@@ -5,7 +5,7 @@ class MainData
 {
     public:
         //static RawDataModel * currentModel;
-        static sf::Window * rootWindow;
+        static sf::RenderWindow * rootWindow;
         static sf::Clock * mainClock;
         static sf::Clock * frameClock;
 };

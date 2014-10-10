@@ -1,7 +1,7 @@
 #include "MainData.h"
 
 
-sf::Window * MainData::rootWindow;
+sf::RenderWindow * MainData::rootWindow;
 
 sf::Clock * MainData::mainClock = new sf::Clock();
 

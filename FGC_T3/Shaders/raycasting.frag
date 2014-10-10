@@ -3,8 +3,8 @@
 in vec3 EntryPoint;
 in vec4 ExitPointCoord;
 
-uniform sampler2D ExitPoints;
 uniform sampler3D VolumeTex;
+uniform sampler2D ExitPoints;
 uniform sampler1D TransferFunc;
 uniform float     StepSize;
 uniform vec2      ScreenSize;
@@ -37,6 +37,7 @@ void main()
     {
         intensity =  texture(VolumeTex, voxelCoord).x;
         colorSample = texture(TransferFunc, intensity);
+		// colorSample = vec4(intensity);
 
         // modulate the value of colorSample.a
         // front-to-back integration
