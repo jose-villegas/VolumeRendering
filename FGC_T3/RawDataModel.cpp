@@ -8,6 +8,12 @@ RawDataModel::RawDataModel(void)
     width = height = numCuts = 1;
     stepSize = 0.001f;
     rotation = glm::quat_cast(glm::mat4x4(1));
+
+    for (int i = 0; i < 255; i++)
+    {
+        transferFunc[i][0] = transferFunc[i][1] =  transferFunc[i][2] =  transferFunc[i][3] = i;
+    }
+
     initShaders();
     _initTransferFunc1DTex();
 }
@@ -253,39 +259,35 @@ void RawDataModel::_renderCubeFace(GLenum gCullFace)
 
 void RawDataModel::_initTransferFunc1DTex()
 {
-    std::ifstream inFile("tff.dat", std::ifstream::in);
-
-    if (!inFile)
-    {
-        std::cerr << "Error openning file: " << "tff.dat" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    const int MAX_CNT = 10000;
-    GLubyte * tff = (GLubyte *) calloc(MAX_CNT, sizeof(GLubyte));
-    inFile.read(reinterpret_cast<char *>(tff), MAX_CNT);
-
-    if (inFile.eof())
-    {
-        size_t bytecnt = inFile.gcount();
-        *(tff + bytecnt) = '\0';
-        std::cout << "bytecnt " << bytecnt << std::endl;
-    }
-    else if (inFile.fail())
-    {
-        std::cout << "tff.dat" << "read failed " << std::endl;
-    }
-    else
-    {
-        std::cout << "tff.dat" << "is too large" << std::endl;
-    }
-
+    //std::ifstream inFile("tff.dat", std::ifstream::in);
+    //if (!inFile)
+    //{
+    //    std::cerr << "Error openning file: " << "tff.dat" << std::endl;
+    //    exit(EXIT_FAILURE);
+    //}
+    //const int MAX_CNT = 10000;
+    //GLubyte * tff = (GLubyte *) calloc(MAX_CNT, sizeof(GLubyte));
+    //inFile.read(reinterpret_cast<char *>(tff), MAX_CNT);
+    //if (inFile.eof())
+    //{
+    //    size_t bytecnt = inFile.gcount();
+    //    *(tff + bytecnt) = '\0';
+    //    std::cout << "bytecnt " << bytecnt << std::endl;
+    //}
+    //else if (inFile.fail())
+    //{
+    //    std::cout << "tff.dat" << "read failed " << std::endl;
+    //}
+    //else
+    //{
+    //    std::cout << "tff.dat" << "is too large" << std::endl;
+    //}
     glGenTextures(1, &_tFunc1DTex);
     glBindTexture(GL_TEXTURE_1D, _tFunc1DTex);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, tff);
-    free(tff);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, transferFunc);
+    //free(tff);
 }

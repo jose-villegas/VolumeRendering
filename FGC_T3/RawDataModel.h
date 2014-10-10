@@ -10,12 +10,12 @@
 class RawDataModel: VolumeShader
 {
     private:
-        GLuint _tFunc1DTex;
         GLuint _backFace2DTex;
-        GLuint _volume3DTex;
         GLuint _depthRenderBuffer;
         GLuint _frameBuffer;
         GLuint _gVao;
+        GLuint _tFunc1DTex;
+        GLuint _volume3DTex;
 
         bool _initVBO();
         void _initTransferFunc1DTex();
@@ -24,14 +24,15 @@ class RawDataModel: VolumeShader
         bool _initFrameBuffer();
         void _renderCubeFace(GLenum gCullFace);
     public:
-        char * sModelName;
+        GLubyte * data;
+        GLubyte transferFunc[256][4];
         bool isLoaded;
-        int width;
+        char * sModelName;
+        float stepSize;
+        glm::quat rotation;
         int height;
         int numCuts;
-        float stepSize;
-        GLubyte * data;
-        glm::quat rotation;
+        int width;
 
         void load(const char * pszFilepath, int width, int height, int numCuts);
         void render();
