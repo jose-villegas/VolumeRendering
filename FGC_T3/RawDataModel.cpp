@@ -9,7 +9,7 @@ RawDataModel::RawDataModel(void)
     stepSize = 0.001f;
     rotation = glm::quat_cast(glm::mat4x4(1));
 
-    for (int i = 0; i < 255; i++)
+    for (int i = 0; i < 256; i++)
     {
         transferFunc[i][0] = transferFunc[i][1] =  transferFunc[i][2] =  transferFunc[i][3] = i;
     }

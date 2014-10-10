@@ -1,13 +1,12 @@
 #include "EditingWindow.h"
 
-
 EditingWindow::EditingWindow(void)
 {
     histogram.fill(0);
     rawModel = NULL;
     windowThread = NULL;
     parent = window = NULL;
-    bool isHistLoaded = false;
+    isHistLoaded = false;
 
     for (int i = 0; i < 256; i++)
     {
@@ -30,15 +29,15 @@ void EditingWindow::init(sf::RenderWindow * parent)
 
 void EditingWindow::_windowRender(EditingWindow * eWin)
 {
-    eWin->window = new sf::RenderWindow(sf::VideoMode(775, 270, 32), "Funcion de Transferencia", sf::Style::Titlebar);
+    eWin->window = new sf::RenderWindow(sf::VideoMode(775, 285, 32), "Funcion de Transferencia", sf::Style::Titlebar);
     eWin->window->setPosition(sf::Vector2i(0, 0));
     sf::RectangleShape indicator[256];
 
     for (int i = 0; i < 256; i++)
     {
-        indicator[i] = sf::RectangleShape(sf::Vector2f(2, 6));
+        indicator[i] = sf::RectangleShape(sf::Vector2f(2, 10));
         indicator[i].setFillColor(sf::Color(i, i, i, i));
-        indicator[i].setPosition(5 + i * 3, 265);
+        indicator[i].setPosition(5 + i * 3, 260);
     }
 
     // Histogram
@@ -51,7 +50,7 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
         {
         }
 
-        eWin->window->clear(sf::Color::Transparent);
+        eWin->window->clear(sf::Color::Black);
 
         for (int i = 0; i < 256; i++)
         {
@@ -59,9 +58,26 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
             {
                 eWin->line[i].setSize(sf::Vector2f(log10(eWin->histogram[i] * 9 + 1) * 256.0f, 2));
                 eWin->window->draw(eWin->line[i]);
+                //////////////////////////////////////////////////////////////////////////
+                GLubyte * color = eWin->rawModel->transferFunc[i];
+                indicator[i].setPosition(5 + i * 3, 273);
+                indicator[i].setFillColor(sf::Color((int) * (color), (int) * (color + 1), (int) * (color + 2), (int) * (color + 3)));
+                eWin->window->draw(indicator[i]);
             }
 
+            indicator[i].setPosition(5 + i * 3, 260);
+            indicator[i].setFillColor(sf::Color(i, i, i, i));
             eWin->window->draw(indicator[i]);
+        }
+
+        for (int i = 0; i < TransferFunction::getAlphaControlPoints().size(); i++)
+        {
+            sf::CircleShape circle(2);
+            circle.setOutlineThickness(1);
+            circle.setPosition(3.5 + TransferFunction::getAlphaControlPoints().at(i).isoValue * 3, 255 - TransferFunction::getAlphaControlPoints().at(i).rgba[3]);
+            circle.setFillColor(sf::Color::Transparent);
+            circle.setOutlineColor(sf::Color::Cyan);
+            eWin->window->draw(circle);
         }
 
         eWin->window->display();

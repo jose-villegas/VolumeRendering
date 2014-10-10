@@ -129,6 +129,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainData.cpp" />
     <ClCompile Include="RawDataModel.cpp" />
+    <ClCompile Include="TransferFunction.cpp" />
     <ClCompile Include="UIBuilder.cpp" />
     <ClCompile Include="VolumeShader.cpp" />
   </ItemGroup>
@@ -138,6 +139,8 @@
     <ClInclude Include="EditingWindow.h" />
     <ClInclude Include="MainData.h" />
     <ClInclude Include="RawDataModel.h" />
+    <ClInclude Include="Spline.h" />
+    <ClInclude Include="TransferFunction.h" />
     <ClInclude Include="UIBuilder.h" />
     <ClInclude Include="VolumeShader.h" />
   </ItemGroup>

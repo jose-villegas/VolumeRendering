@@ -15,7 +15,7 @@ void initGlew();
 // Setup AntTweakBar
 void guiSetup(sf::Window &window, UIBuilder &gui);
 // Main Render-Logic Loop
-void Render(sf::Window &window, sf::Clock &frameClock);
+void Render(sf::RenderWindow &window, sf::Clock &frameClock);
 // Active Volume Data
 RawDataModel * rawModel;
 EditingWindow * eWindow;
@@ -38,6 +38,17 @@ int main()
     eWindow = new EditingWindow();
     guiSetup(window, gui);
     eWindow->init(&window);
+    TransferFunction::addControlPoint(.91f, .7f, .61f, 0);
+    TransferFunction::addControlPoint(.91f, .7f, .61f, 80);
+    TransferFunction::addControlPoint(1.0f, 1.0f, .85f, 82);
+    TransferFunction::addControlPoint(1.0f, 1.0f, .85f, 256);
+    TransferFunction::addControlPoint(255 * 0.0f, 80);
+    TransferFunction::addControlPoint(255 * 0.05f, 63);
+    TransferFunction::addControlPoint(255 * 0.0f, 40);
+    TransferFunction::addControlPoint(255 * 1.0f, 256);
+    TransferFunction::addControlPoint(255 * 0.0f, 0);
+    TransferFunction::addControlPoint(255 * 0.9f, 82);
+    TransferFunction::addControlPoint(255 * 0.2f, 60);
     // Setup OpenGL to Current Context
     openglSetup(desktop);
     // Initialze Main Loop
@@ -120,7 +131,7 @@ void guiSetup(sf::Window &window, UIBuilder &gui)
     gui.addRotationControls("Modelo", "Rotacion", &rawModel->rotation, "opened=true showval=true");
 }
 
-void Render(sf::Window &window, sf::Clock &frameClock)
+void Render(sf::RenderWindow &window, sf::Clock &frameClock)
 {
     while (window.isOpen())
     {
@@ -146,8 +157,7 @@ void Render(sf::Window &window, sf::Clock &frameClock)
             }
         }
 
-        // clear the buffers
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        window.clear();
         // Render OpenGL
         rawModel->render();
         // Draw UI

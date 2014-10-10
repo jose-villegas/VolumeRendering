@@ -2,6 +2,7 @@
 #include "commons.h"
 #include "RawDataModel.h"
 #include "UIBuilder.h"
+#include "TransferFunction.h"
 
 class EditingWindow
 {
