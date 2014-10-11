@@ -49,7 +49,7 @@ void TransferFunction::addControlPoint(int alpha, int isovalue)
         {
             nControlPoint.isoValue--;
 
-            if (nControlPoint.isoValue < 0) { nControlPoint.isoValue = 1; }
+            if (nControlPoint.isoValue < 1) { nControlPoint.isoValue = 1; it++; }
         }
     }
 

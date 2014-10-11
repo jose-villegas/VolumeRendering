@@ -41,6 +41,11 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
     sf::RectangleShape indicator[256];
     sf::CircleShape circle(4);
     circle.setOutlineThickness(1);
+    UIBuilder ui;
+    ui.addBar("Point");
+    ui.setBarSize("Point", 300, 200);
+    ui.setBarPosition("Point", eWin->parent->getSize().x - 305, 5);
+    //ui.setBarPosition("Point", )
 
     for (int i = 0; i < 256; i++)
     {
@@ -57,9 +62,12 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
 
         while (eWin->window->pollEvent(event))
         {
-            if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Middle))
+            if (event.type == sf::Event::MouseButtonPressed && eWin->isHistLoaded)
             {
-                updateTransferFunction(eWin);
+                if (sf::Mouse::isButtonPressed(sf::Mouse::Middle))
+                {
+                    updateTransferFunction(eWin);
+                }
             }
         }
 
@@ -107,9 +115,12 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                         circle.setFillColor(sf::Color::Green);
                         //std::cout << sf::Mouse::getPosition(*eWin->window).x / 3 << " " << 255 - sf::Mouse::getPosition(*eWin->window).y + 3 << std::endl;
                         TransferFunction::deleteAlphaControlPoint(i);
-                        TransferFunction::addControlPoint(255 - sf::Mouse::getPosition(*eWin->window).y + 3, sf::Mouse::getPosition(*eWin->window).x / 3);
+                        int finalIsoValue = sf::Mouse::getPosition(*eWin->window).x / 3;
+                        int finalAlphaValue = 255 - sf::Mouse::getPosition(*eWin->window).y + 3;
+                        finalIsoValue = i == 0 ? 0 : i == TransferFunction::getAlphaControlPoints().size() ? 255 : finalIsoValue;
+                        TransferFunction::addControlPoint(finalAlphaValue, finalIsoValue);
 
-                        if (eWin->rawModel && eWin->rawModel->isLoaded)
+                        if (eWin->isHistLoaded)
                         {
                             TransferFunction::getLinearFunction(eWin->rawModel->transferFunc);
                             eWin->rawModel->updateTransferFunc1DTex();
