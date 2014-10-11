@@ -40,6 +40,10 @@ void TransferFunction::addControlPoint(int alpha, int isovalue)
 
 void TransferFunction::getSmoothFunction(byte dst[256][4])
 {
+}
+
+void TransferFunction::getLinearFunction(byte dst[256][4])
+{
     tk::Spline alphaSpline, redSpline, greenSpline, blueSpline;
     std::vector<double> alpha, red, green, blue, isoV;
 
@@ -53,9 +57,9 @@ void TransferFunction::getSmoothFunction(byte dst[256][4])
         isoV.push_back(colorControlPoints[i].isoValue);
     }
 
-    redSpline.set_points(isoV, red, true);
-    greenSpline.set_points(isoV, green, true);
-    blueSpline.set_points(isoV, blue, true);
+    redSpline.set_points(isoV, red, false);
+    greenSpline.set_points(isoV, green, false);
+    blueSpline.set_points(isoV, blue, false);
     int minRed, minGreen, minBlue;
     int maxRed, maxGreen, maxBlue;
     int r = 0, g = 0, b = 0;
@@ -81,14 +85,6 @@ void TransferFunction::getSmoothFunction(byte dst[256][4])
         blue.push_back(b);
     }
 
-    std::transform(red.begin(), red.end(), red.begin(), std::bind1st(std::plus<int>(), -minRed));
-    std::transform(green.begin(), green.end(), green.begin(), std::bind1st(std::plus<int>(), -minGreen));
-    std::transform(blue.begin(), blue.end(), blue.begin(), std::bind1st(std::plus<int>(), -minBlue));
-    maxRed += -minRed; maxGreen += -minGreen; maxBlue += -minBlue;
-    std::transform(red.begin(), red.end(), red.begin(), std::bind1st(std::multiplies<double>(), 1.0f / maxRed));
-    std::transform(green.begin(), green.end(), green.begin(), std::bind1st(std::multiplies<double>(),  1.0f / maxGreen));
-    std::transform(blue.begin(), blue.end(), blue.begin(), std::bind1st(std::multiplies<double>(), 1.0f / maxBlue));
-
     //////////////////////////////////////////////////////////////////////////
     // Alpha Points
     for (int i = 0; i < alphaControlPoints.size(); i++)
@@ -97,7 +93,7 @@ void TransferFunction::getSmoothFunction(byte dst[256][4])
         isoV.push_back(alphaControlPoints[i].isoValue);
     }
 
-    alphaSpline.set_points(isoV, alpha, true);
+    alphaSpline.set_points(isoV, alpha, false);
     int a, maxAlpha = 0, minAlpha = std::numeric_limits<int>::infinity();
     alpha.clear(); isoV.clear();
 
@@ -111,22 +107,14 @@ void TransferFunction::getSmoothFunction(byte dst[256][4])
         alpha.push_back(a);
     }
 
-    std::transform(alpha.begin(), alpha.end(), alpha.begin(), std::bind1st(std::plus<int>(), -minAlpha));
-    maxAlpha += -minAlpha;
-    std::transform(alpha.begin(), alpha.end(), alpha.begin(), std::bind1st(std::multiplies<double>(), 1.0f / maxAlpha));
-
     //////////////////////////////////////////////////////////////////////////
     for (int i = 0; i < 256; i++)
     {
-        dst[i][0] = (int)(255.0 * red[i]);
-        dst[i][1] = (int)(255.0 * green[i]);
-        dst[i][2] = (int)(255.0 * blue[i]);
-        dst[i][3] = (int)(255.0 * alpha[i]);
+        dst[i][0] = (int)(red[i]);
+        dst[i][1] = (int)(green[i]);
+        dst[i][2] = (int)(blue[i]);
+        dst[i][3] = (int)(alpha[i]);
     }
-}
-
-void TransferFunction::getLinearFunction(byte dst[256][4])
-{
 }
 
 

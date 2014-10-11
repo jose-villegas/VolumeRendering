@@ -32,6 +32,7 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
     eWin->window = new sf::RenderWindow(sf::VideoMode(775, 285, 32), "Funcion de Transferencia", sf::Style::Titlebar);
     eWin->window->setPosition(sf::Vector2i(0, 0));
     sf::RectangleShape indicator[256];
+    sf::CircleShape circle(2);
 
     for (int i = 0; i < 256; i++)
     {
@@ -72,11 +73,30 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
 
         for (int i = 0; i < TransferFunction::getAlphaControlPoints().size(); i++)
         {
-            sf::CircleShape circle(2);
+            // Circles for Controls Points
             circle.setOutlineThickness(1);
-            circle.setPosition(3.5 + TransferFunction::getAlphaControlPoints().at(i).isoValue * 3, 255 - TransferFunction::getAlphaControlPoints().at(i).rgba[3]);
+            circle.setPosition(3.5 + TransferFunction::getAlphaControlPoints().at(i).isoValue * 3,
+                               255 - TransferFunction::getAlphaControlPoints().at(i).rgba[3]);
             circle.setFillColor(sf::Color::Transparent);
             circle.setOutlineColor(sf::Color::Cyan);
+
+            // Plotting lines
+            if (i < TransferFunction::getAlphaControlPoints().size() - 1)
+            {
+                sf::RectangleShape plotLine;
+                sf::Vector2f nextPos = sf::Vector2f(5 + TransferFunction::getAlphaControlPoints().at(i + 1).isoValue * 3,
+                                                    255 - TransferFunction::getAlphaControlPoints().at(i + 1).rgba[3] + 1.5);
+                sf::Vector2f currentPos = sf::Vector2f(circle.getPosition().x + 1.5, circle.getPosition().y + 1.5);
+                float xDiff = currentPos.x - nextPos.x;
+                float yDiff = currentPos.y - nextPos.y;
+                float angle = atan2(yDiff, xDiff) * (180 / 3.14);
+                float distSize = sqrt(pow(xDiff, 2) + pow(yDiff, 2));
+                plotLine.rotate(90 + angle);
+                plotLine.setPosition(currentPos);
+                plotLine.setSize(sf::Vector2f(1, distSize));
+                eWin->window->draw(plotLine);
+            }
+
             eWin->window->draw(circle);
         }
 
