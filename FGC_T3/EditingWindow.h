@@ -15,6 +15,11 @@ class EditingWindow
         bool isHistLoaded;
 
         static void _windowRender(EditingWindow * eWin);
+
+        static void updateTransferFunction(EditingWindow * eWin);
+
+        static bool isMouseOver(EditingWindow * eWin, sf::CircleShape &circle);
+
     public:
         sf::RenderWindow * parent;
         sf::RenderWindow * window;

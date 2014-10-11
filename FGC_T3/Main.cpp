@@ -60,7 +60,7 @@ int main()
 sf::ContextSettings openglWindowContext()
 {
     sf::ContextSettings settings;
-    settings.depthBits = 8;
+    settings.depthBits = 32;
     settings.stencilBits = 8;
     settings.antialiasingLevel = 0;
     settings.majorVersion = 3;

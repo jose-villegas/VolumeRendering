@@ -10,8 +10,8 @@ class ControlPoint
 
         void create(int r, int g, int b, int isovalue);
         void create(int alpha, int isovalue);
+
         friend bool operator<(ControlPoint const &a, ControlPoint const &b);
-        friend bool operator>(ControlPoint const &a, ControlPoint const &b);
 };
 
 class TransferFunction
@@ -22,6 +22,7 @@ class TransferFunction
     public:
         static void addControlPoint(int r, int g, int b, int isovalue);
         static void addControlPoint(int alpha, int isovalue);
+        static void deleteAlphaControlPoint(unsigned const int index);
         static void getSmoothFunction(byte dst[256][4]);
         static void getLinearFunction(byte dst[256][4]);
         static std::vector<ControlPoint> getAlphaControlPoints() { return alphaControlPoints; }

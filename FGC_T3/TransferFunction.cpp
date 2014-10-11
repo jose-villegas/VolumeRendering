@@ -21,7 +21,6 @@ void ControlPoint::create(int alpha, int isovalue)
     this->isoValue = isovalue;
 }
 
-
 void TransferFunction::addControlPoint(int r, int g, int b, int isovalue)
 {
     ControlPoint nControlPoint;
@@ -32,9 +31,28 @@ void TransferFunction::addControlPoint(int r, int g, int b, int isovalue)
 
 void TransferFunction::addControlPoint(int alpha, int isovalue)
 {
+    if (alpha < 0) { alpha = 0; }
+
+    if (isovalue < 0) { isovalue = 0; }
+
+    if (alpha > 255) { alpha = 255; }
+
+    if (isovalue > 255) { isovalue = 255; }
+
     ControlPoint nControlPoint;
     nControlPoint.create(alpha, isovalue);
     auto it = std::lower_bound(alphaControlPoints.begin(), alphaControlPoints.end(), nControlPoint);
+
+    if (!alphaControlPoints.empty() && it != alphaControlPoints.end())
+    {
+        if ((it)->isoValue == nControlPoint.isoValue)
+        {
+            nControlPoint.isoValue--;
+
+            if (nControlPoint.isoValue < 0) { nControlPoint.isoValue = 1; }
+        }
+    }
+
     alphaControlPoints.insert(it, nControlPoint);
 }
 
@@ -117,13 +135,14 @@ void TransferFunction::getLinearFunction(byte dst[256][4])
     }
 }
 
+void TransferFunction::deleteAlphaControlPoint(unsigned const int index)
+{
+    alphaControlPoints.erase(alphaControlPoints.begin() + index);
+}
+
 
 bool operator<(ControlPoint const &a, ControlPoint const &b)
 {
     return a.isoValue < b.isoValue;
 }
 
-bool operator>(ControlPoint const &a, ControlPoint const &b)
-{
-    return a.isoValue > b.isoValue;
-}
