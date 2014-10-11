@@ -1,10 +1,11 @@
 #pragma
 #include "commons.h"
+#include "Spline.h"
 
 class ControlPoint
 {
     public:
-        GLubyte rgba[4];
+        glm::vec4 rgba;
         int isoValue;
 
         void create(int r, int g, int b, int isovalue);

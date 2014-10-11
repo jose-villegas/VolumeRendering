@@ -38,17 +38,19 @@ int main()
     eWindow = new EditingWindow();
     guiSetup(window, gui);
     eWindow->init(&window);
-    TransferFunction::addControlPoint(.91f, .7f, .61f, 0);
-    TransferFunction::addControlPoint(.91f, .7f, .61f, 80);
-    TransferFunction::addControlPoint(1.0f, 1.0f, .85f, 82);
-    TransferFunction::addControlPoint(1.0f, 1.0f, .85f, 256);
+    TransferFunction::addControlPoint(255 * 0.9f, 255 * 0.7f, 255 * 0.6f, 0);
+    TransferFunction::addControlPoint(255 * 0.9f, 255 * 0.7f, 255 * 0.6f, 80);
+    TransferFunction::addControlPoint(255 * 1.0f, 255 * 1.0f, 255 * 0.8f, 82);
+    TransferFunction::addControlPoint(255 * 1.0f, 255 * 1.0f, 255 * 0.8f, 255);
     TransferFunction::addControlPoint(255 * 0.0f, 80);
     TransferFunction::addControlPoint(255 * 0.05f, 63);
     TransferFunction::addControlPoint(255 * 0.0f, 40);
-    TransferFunction::addControlPoint(255 * 1.0f, 256);
+    TransferFunction::addControlPoint(255 * 1.0f, 255);
     TransferFunction::addControlPoint(255 * 0.0f, 0);
     TransferFunction::addControlPoint(255 * 0.9f, 82);
     TransferFunction::addControlPoint(255 * 0.2f, 60);
+    TransferFunction::getSmoothFunction(rawModel->transferFunc);
+    rawModel->updateTransferFunc1DTex();
     // Setup OpenGL to Current Context
     openglSetup(desktop);
     // Initialze Main Loop

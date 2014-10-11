@@ -77,7 +77,7 @@ namespace
 
 
         // spline interpolation
-        class spline
+        class Spline
         {
             private:
                 std::vector<double> m_x, m_y;          // x,y coordinates of points
@@ -282,7 +282,7 @@ namespace
         // spline implementation
         // -----------------------
 
-        void spline::set_points(const std::vector<double> &x,
+        void Spline::set_points(const std::vector<double> &x,
                                 const std::vector<double> &y, bool cubic_spline)
         {
             assert(x.size() == y.size());
@@ -353,7 +353,7 @@ namespace
             m_c[n - 1] = 3.0 * m_a[n - 2] * h * h + 2.0 * m_b[n - 2] * h + m_c[n - 2]; // = f'_{n-2}(x_{n-1})
         }
 
-        double spline::operator()(double x) const
+        double Spline::operator()(double x) const
         {
             size_t n = m_x.size();
             // find the closest point m_x[idx] < x, idx=0 even if x<m_x[0]

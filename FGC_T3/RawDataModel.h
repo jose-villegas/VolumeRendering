@@ -18,7 +18,7 @@ class RawDataModel: VolumeShader
         GLuint _volume3DTex;
 
         bool _initVBO();
-        void _initTransferFunc1DTex();
+
         bool _init2DBackfaceTex();
         bool _init3DVolumeTex(const char * pszFilepath, int width, int height, int numCuts);
         bool _initFrameBuffer();
@@ -36,6 +36,7 @@ class RawDataModel: VolumeShader
 
         void load(const char * pszFilepath, int width, int height, int numCuts);
         void render();
+        void updateTransferFunc1DTex();
         RawDataModel(void);
         ~RawDataModel(void);
 };

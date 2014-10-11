@@ -15,7 +15,7 @@ RawDataModel::RawDataModel(void)
     }
 
     initShaders();
-    _initTransferFunc1DTex();
+    updateTransferFunc1DTex();
 }
 
 
@@ -257,7 +257,7 @@ void RawDataModel::_renderCubeFace(GLenum gCullFace)
     glDisable(GL_CULL_FACE);
 }
 
-void RawDataModel::_initTransferFunc1DTex()
+void RawDataModel::updateTransferFunc1DTex()
 {
     //std::ifstream inFile("tff.dat", std::ifstream::in);
     //if (!inFile)
