@@ -13,6 +13,7 @@ class UIBuilder
         void setHwnd(sf::WindowHandle val) { hwnd = val; }
         void addBar(std::string sBarName);
         void addBar(std::string sBarName, int iPosition[2], int iSize[2]);
+        TwBar * getBar(std::string sBarName);
         void setBarPosition(std::string sBarName, int x, int y);
         void setBarSize(std::string sBarName, int w, int h);
         void addVariable(std::string sBarName, std::string sName, TwType varType, void * var, std::string sVarParams);

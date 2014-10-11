@@ -43,9 +43,13 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
     circle.setOutlineThickness(1);
     UIBuilder ui;
     ui.addBar("Point");
-    ui.setBarSize("Point", 300, 200);
-    ui.setBarPosition("Point", eWin->parent->getSize().x - 305, 5);
-    //ui.setBarPosition("Point", )
+    ui.setBarSize("Point", 200, 200);
+    ui.setBarPosition("Point", eWin->parent->getSize().x - 205, 5);
+
+    for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
+    {
+        ui.addColorControls("Point", "Point " + std::to_string(i), TransferFunction::getControlPointColors(i), "opened=true");
+    }
 
     for (int i = 0; i < 256; i++)
     {
@@ -55,27 +59,33 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
     }
 
     // Histogram
+    sf::Color outline;
 
     while (eWin->parent->isOpen() && eWin->window->isOpen())
     {
         sf::Event event;
 
-        while (eWin->window->pollEvent(event))
+        if (eWin->isHistLoaded)
         {
-            if (event.type == sf::Event::MouseButtonPressed && eWin->isHistLoaded)
+            while (eWin->window->pollEvent(event))
             {
-                if (sf::Mouse::isButtonPressed(sf::Mouse::Middle))
+                outline = sf::Color::Cyan;
+
+                if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Middle))
                 {
                     updateTransferFunction(eWin);
+                    TwRemoveAllVars(ui.getBar("Point"));
+
+                    for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
+                    {
+                        ui.addColorControls("Point", "Point " + std::to_string(i), TransferFunction::getControlPointColors(i), "opened=true");
+                    }
                 }
             }
-        }
 
-        eWin->window->clear(sf::Color::Color(20, 20, 20, 255));
+            eWin->window->clear(sf::Color::Color(20, 20, 20, 255));
 
-        for (int i = 0; i < 256; i++)
-        {
-            if (eWin->isHistLoaded)
+            for (int i = 0; i < 256; i++)
             {
                 eWin->line[i].setSize(sf::Vector2f(log10(eWin->histogram[i] * 9 + 1) * 256.0f, 2));
                 eWin->window->draw(eWin->line[i]);
@@ -84,73 +94,74 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                 indicator[i].setPosition(5 + i * 3, 273);
                 indicator[i].setFillColor(sf::Color((int) * (color), (int) * (color + 1), (int) * (color + 2), (int) * (color + 3)));
                 eWin->window->draw(indicator[i]);
+                indicator[i].setPosition(5 + i * 3, 260);
+                indicator[i].setFillColor(sf::Color(i, i, i, i));
+                eWin->window->draw(indicator[i]);
             }
 
-            indicator[i].setPosition(5 + i * 3, 260);
-            indicator[i].setFillColor(sf::Color(i, i, i, i));
-            eWin->window->draw(indicator[i]);
-        }
-
-        for (int i = 0; i < TransferFunction::getAlphaControlPoints().size(); i++)
-        {
-            circle.setFillColor(sf::Color::Transparent);
-            circle.setOutlineColor(sf::Color::Cyan);
-            sf::CircleShape cp = circle;
-            // Circles for Controls Points
-            circle.setPosition(TransferFunction::getAlphaControlPoints()[i].isoValue * 3 - 3,
-                               255 - TransferFunction::getAlphaControlPoints()[i].rgba.a);
-
-            if (isMouseOver(eWin, circle))
+            for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
             {
-                circle.setFillColor(sf::Color(10, 240, 10, 122));
+                // Circles for Controls Points
+                sf::Color rgba;
+                rgba.r = TransferFunction::getControlPoints()[i].rgba[0] * 255;
+                rgba.g = TransferFunction::getControlPoints()[i].rgba[1] * 255;
+                rgba.b = TransferFunction::getControlPoints()[i].rgba[2] * 255;
+                rgba.a = TransferFunction::getControlPoints()[i].rgba[3] * 255;
+                circle.setOutlineThickness(1);
+                circle.setFillColor(rgba);
+                circle.setOutlineColor(sf::Color::Cyan);
+                circle.setPosition(TransferFunction::getControlPoints()[i].isoValue * 3 - 3,
+                                   255 - TransferFunction::getControlPoints()[i].rgba[3] * 255);
 
-                if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+                if (isMouseOver(eWin, circle))
                 {
-                    if (!dragStarted)
+                    circle.setOutlineColor(sf::Color::Green);
+
+                    if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
                     {
-                        dragStarted = true;
+                        if (!dragStarted)
+                        {
+                            dragStarted = true;
+                        }
+                        else
+                        {
+                            circle.setOutlineThickness(2);
+                            int finalIsoValue = sf::Mouse::getPosition(*eWin->window).x / 3;
+                            int finalAlphaValue = 255 - sf::Mouse::getPosition(*eWin->window).y + 3;
+                            TransferFunction::deleteAlphaControlPoint(i);
+                            finalIsoValue = i == 0 ? 0 : i == TransferFunction::getControlPoints().size() ? 255 : finalIsoValue;
+                            TransferFunction::addControlPoint(rgba.r, rgba.g, rgba.b, finalAlphaValue, finalIsoValue);
+                        }
                     }
                     else
                     {
-                        circle.setFillColor(sf::Color::Green);
-                        //std::cout << sf::Mouse::getPosition(*eWin->window).x / 3 << " " << 255 - sf::Mouse::getPosition(*eWin->window).y + 3 << std::endl;
-                        TransferFunction::deleteAlphaControlPoint(i);
-                        int finalIsoValue = sf::Mouse::getPosition(*eWin->window).x / 3;
-                        int finalAlphaValue = 255 - sf::Mouse::getPosition(*eWin->window).y + 3;
-                        finalIsoValue = i == 0 ? 0 : i == TransferFunction::getAlphaControlPoints().size() ? 255 : finalIsoValue;
-                        TransferFunction::addControlPoint(finalAlphaValue, finalIsoValue);
-
-                        if (eWin->isHistLoaded)
-                        {
-                            TransferFunction::getLinearFunction(eWin->rawModel->transferFunc);
-                            eWin->rawModel->updateTransferFunc1DTex();
-                        }
+                        dragStarted = false;
                     }
                 }
-                else
+
+                // Plotting lines
+                if (i < TransferFunction::getControlPoints().size() - 1)
                 {
-                    dragStarted = false;
+                    sf::RectangleShape plotLine;
+                    sf::Vector2f nextPos = sf::Vector2f(TransferFunction::getControlPoints().at(i + 1).isoValue * 3 - 3 + 4,
+                                                        255 - TransferFunction::getControlPoints().at(i + 1).rgba[3] * 255 + 4);
+                    sf::Vector2f currentPos = sf::Vector2f(circle.getPosition().x + 4, circle.getPosition().y + 4);
+                    float xDiff = currentPos.x - nextPos.x;
+                    float yDiff = currentPos.y - nextPos.y;
+                    float angle = atan2(yDiff, xDiff) * (180 / 3.14);
+                    float distSize = sqrt(pow(xDiff, 2) + pow(yDiff, 2));
+                    plotLine.rotate(90 + angle);
+                    plotLine.setPosition(currentPos);
+                    plotLine.setSize(sf::Vector2f(1, distSize));
+                    eWin->window->draw(plotLine);
                 }
+
+                eWin->window->draw(circle);
             }
 
-            // Plotting lines
-            if (i < TransferFunction::getAlphaControlPoints().size() - 1)
-            {
-                sf::RectangleShape plotLine;
-                sf::Vector2f nextPos = sf::Vector2f(TransferFunction::getAlphaControlPoints().at(i + 1).isoValue * 3 - 3 + 4,
-                                                    255 - TransferFunction::getAlphaControlPoints().at(i + 1).rgba[3] + 4);
-                sf::Vector2f currentPos = sf::Vector2f(circle.getPosition().x + 4, circle.getPosition().y + 4);
-                float xDiff = currentPos.x - nextPos.x;
-                float yDiff = currentPos.y - nextPos.y;
-                float angle = atan2(yDiff, xDiff) * (180 / 3.14);
-                float distSize = sqrt(pow(xDiff, 2) + pow(yDiff, 2));
-                plotLine.rotate(90 + angle);
-                plotLine.setPosition(currentPos);
-                plotLine.setSize(sf::Vector2f(1, distSize));
-                eWin->window->draw(plotLine);
-            }
-
-            eWin->window->draw(circle);
+            // Update Transfer Function Real Time
+            TransferFunction::getLinearFunction(eWin->rawModel->transferFunc);
+            eWin->rawModel->updateTransferFunc1DTex();
         }
 
         eWin->window->display();
@@ -231,13 +242,7 @@ void EditingWindow::updateTransferFunction(EditingWindow * eWin)
         //clickingPoints.back().setFillColor(sf::Color::Transparent);
         //clickingPoints.back().setOutlineThickness(1);
         //clickingPoints.back().setPosition((sf::Vector2f)sf::Mouse::getPosition(*eWin->window));
-        TransferFunction::addControlPoint(255 - sf::Mouse::getPosition(*eWin->window).y + 3, sf::Mouse::getPosition(*eWin->window).x / 3);
-
-        if (eWin->rawModel)
-        {
-            TransferFunction::getLinearFunction(eWin->rawModel->transferFunc);
-
-            if (eWin->rawModel->isLoaded) { eWin->rawModel->updateTransferFunc1DTex(); }
-        }
+        TransferFunction::addControlPoint(255, 255, 255, 255 - sf::Mouse::getPosition(*eWin->window).y + 3,
+                                          sf::Mouse::getPosition(*eWin->window).x / 3);
     }
 }

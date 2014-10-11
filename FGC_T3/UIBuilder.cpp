@@ -99,7 +99,8 @@ void UIBuilder::addLabel(std::string sBarName, std::string sLabelText)
     TwAddButton(bar, sLabelText.c_str(), NULL, NULL, "");
 }
 
-void UIBuilder::addButton(std::string sBarName, std::string sLabelText, TwButtonCallback bCallBackFunc, void * clientData, std::string sParams)
+void UIBuilder::addButton(std::string sBarName, std::string sLabelText, TwButtonCallback bCallBackFunc, void * clientData,
+                          std::string sParams)
 {
     TwBar * bar = _uiBars[sBarName];
     TwAddButton(bar, sLabelText.c_str(), bCallBackFunc, clientData, sParams.c_str());
@@ -109,6 +110,11 @@ void UIBuilder::addFileDialogButton(std::string sBarName, std::string sLabelText
 {
     TwBar * bar = _uiBars[sBarName];
     TwAddButton(bar, sLabelText.c_str(), fileDialogButtonOnCB, destString, sParams.c_str());
+}
+
+TwBar * UIBuilder::getBar(std::string sBarName)
+{
+    return  _uiBars[sBarName];
 }
 
 void TW_CALL fileDialogButtonOnCB(void * clientData)

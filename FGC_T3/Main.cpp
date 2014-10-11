@@ -38,12 +38,9 @@ int main()
     eWindow = new EditingWindow();
     guiSetup(window, gui);
     eWindow->init(&window);
-    // Colors
-    TransferFunction::addControlPoint(0, 0, 0, 0);
-    TransferFunction::addControlPoint(255, 255, 255, 255);
-    // Alpha
-    TransferFunction::addControlPoint(0, 0);
-    TransferFunction::addControlPoint(255 , 255);
+    // Control Points
+    TransferFunction::addControlPoint(0, 0, 0, 0, 0);
+    TransferFunction::addControlPoint(255, 255, 255, 255 , 255);
     // Update Transfer Function
     TransferFunction::getLinearFunction(rawModel->transferFunc);
     rawModel->updateTransferFunc1DTex();
