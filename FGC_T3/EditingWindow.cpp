@@ -121,7 +121,7 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
 
                     if (mouseOverIndex == -1) { mouseOverIndex = i; }
 
-                    if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+                    if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && i == mouseOverIndex)
                     {
                         if (!dragStarted)
                         {
@@ -137,7 +137,7 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                             TransferFunction::addControlPoint(rgba.r, rgba.g, rgba.b, finalAlphaValue, finalIsoValue);
                         }
                     }
-                    else if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
+                    else if (sf::Mouse::isButtonPressed(sf::Mouse::Right) && i == mouseOverIndex)
                     {
                         if (i > 0 && i < TransferFunction::getControlPoints().size() - 1)
                         {
