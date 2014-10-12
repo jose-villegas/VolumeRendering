@@ -70,60 +70,38 @@ void TransferFunction::getSmoothFunction(byte dst[256][4])
 
 void TransferFunction::getLinearFunction(byte dst[256][4])
 {
-    tk::Spline alphaSpline, redSpline, greenSpline, blueSpline;
-    std::vector<double> alpha, red, green, blue, isoV;
+    std::thread channelThread[4];
+    std::vector<double> channel[5];
+    tk::Spline channelSpline[4];
 
     //////////////////////////////////////////////////////////////////////////
     // Control Points
     for (int i = 0; i < controlPoints.size(); i++)
     {
-        red.push_back(controlPoints[i].rgba[0] * 255);
-        green.push_back(controlPoints[i].rgba[1] * 255);
-        blue.push_back(controlPoints[i].rgba[2] * 255);
-        alpha.push_back(controlPoints[i].rgba[3] * 255);
-        isoV.push_back(controlPoints[i].isoValue);
+        channel[0].push_back(controlPoints[i].rgba[0] * 255);
+        channel[1].push_back(controlPoints[i].rgba[1] * 255);
+        channel[2].push_back(controlPoints[i].rgba[2] * 255);
+        channel[3].push_back(controlPoints[i].rgba[3] * 255);
+        channel[4].push_back(controlPoints[i].isoValue);
     }
 
-    redSpline.set_points(isoV, red, false);
-    greenSpline.set_points(isoV, green, false);
-    blueSpline.set_points(isoV, blue, false);
-    alphaSpline.set_points(isoV, alpha, false);
-    int minRed, minGreen, minBlue, minAlpha;
-    int maxRed, maxGreen, maxBlue, maxAlpha;
-    int r = 0, g = 0, b = 0, a = 0;
-    minRed = minGreen = minBlue = minAlpha = std::numeric_limits<int>::infinity();
-    maxRed = maxGreen = maxBlue = maxAlpha = 0;
-    red.clear(); green.clear(); blue.clear(); isoV.clear(), alpha.clear();
-
-    for (int i = 0; i < 256; i++)
+    for (int i = 0; i < 4; i++)
     {
-        r = (int)redSpline(i);
-        g = (int)greenSpline(i);
-        b = (int)blueSpline(i);
-        a = (int)alphaSpline(i);
-        // Max Value
-        maxRed = r > maxRed ? r : maxRed;
-        maxGreen = g > maxGreen ? g : maxGreen;
-        maxBlue = b > maxBlue ? b : maxBlue;
-        maxAlpha = a > maxAlpha ? a : maxAlpha;
-        // Min Value
-        minRed = r < minRed ? r : minRed;
-        minGreen = g < minGreen ? g : minGreen;
-        minBlue = b < minBlue ? b : minBlue;
-        minAlpha = a < minAlpha ? a : minAlpha;
-        red.push_back(r);
-        green.push_back(g);
-        blue.push_back(b);
-        alpha.push_back(a);
+        channelThread[i] = std::thread(channelSplineThread, channelSpline[i], channel[4], &channel[i]);
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        channelThread[i].join();
     }
 
     //////////////////////////////////////////////////////////////////////////
     for (int i = 0; i < 256; i++)
     {
-        dst[i][0] = (int)(red[i]);
-        dst[i][1] = (int)(green[i]);
-        dst[i][2] = (int)(blue[i]);
-        dst[i][3] = (int)(alpha[i]);
+        dst[i][0] = (int)channel[0][i];
+        dst[i][1] = (int)channel[1][i];
+        dst[i][2] = (int)channel[2][i];
+        dst[i][3] = (int)channel[3][i];
     }
 }
 
@@ -135,6 +113,27 @@ void TransferFunction::deleteAlphaControlPoint(unsigned const int index)
 float * TransferFunction::getControlPointColors(unsigned const int index)
 {
     return controlPoints[index].rgba;
+}
+
+void TransferFunction::channelSplineThread(tk::Spline &spline, std::vector<double> isoV, std::vector<double> * channel)
+{
+    spline.set_points(isoV, *channel, false);
+    int min;
+    int max;
+    int current = 0;
+    min = std::numeric_limits<int>::infinity();
+    max = 0;
+    channel->clear();
+
+    for (int i = 0; i < 256; i++)
+    {
+        current = (int)spline(i);
+        // Max Value
+        max = current > max ? current : max;
+        // Min Value
+        min = current < min ? current : min;
+        channel->push_back(current);
+    }
 }
 
 

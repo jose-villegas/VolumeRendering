@@ -22,6 +22,9 @@ class TransferFunction
         static void deleteAlphaControlPoint(unsigned const int index);
         static void getSmoothFunction(byte dst[256][4]);
         static void getLinearFunction(byte dst[256][4]);
+
+        static void channelSplineThread(tk::Spline &redSpline, std::vector<double> isoV, std::vector<double> * red);
+
         static float * getControlPointColors(unsigned const int index);
         static std::vector<ControlPoint> getControlPoints() { return controlPoints; }
 
