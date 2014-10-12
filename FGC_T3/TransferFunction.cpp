@@ -25,13 +25,39 @@ void TransferFunction::addControlPoint(int r, int g, int b, int alpha, int isova
     nControlPoint.create(r, g, b, alpha, isovalue);
     auto it = std::lower_bound(controlPoints.begin(), controlPoints.end(), nControlPoint);
 
-    if (!controlPoints.empty() && it != controlPoints.end())
+    if (!controlPoints.empty() && it != controlPoints.end()) // Real bad code to force isoValue uniqueness
     {
         if ((it)->isoValue == nControlPoint.isoValue)
         {
             nControlPoint.isoValue--;
 
-            if (nControlPoint.isoValue < 1) { nControlPoint.isoValue = 1; it++; }
+            if (nControlPoint.isoValue < 1) { nControlPoint.isoValue = 1; it++;}
+        }
+
+        auto uniqItLeft = it;
+        auto uniqItRight = it;
+        int previusVal = nControlPoint.isoValue;
+
+        while (uniqItLeft != controlPoints.begin())
+        {
+            if ((uniqItLeft - 1)->isoValue == previusVal)
+            {
+                (uniqItLeft - 1)->isoValue--;
+            }
+
+            previusVal = (uniqItLeft - 1)->isoValue;
+            uniqItLeft--;
+        }
+
+        while (uniqItRight != controlPoints.end() - 1)
+        {
+            if ((uniqItRight + 1)->isoValue == previusVal)
+            {
+                (uniqItRight + 1)->isoValue++;
+            }
+
+            previusVal = (uniqItRight - 1)->isoValue;
+            uniqItRight++;
         }
     }
 

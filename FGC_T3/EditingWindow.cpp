@@ -38,17 +38,18 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
     eWin->window = new sf::RenderWindow(sf::VideoMode(775, 285, 32), "Funcion de Transferencia", sf::Style::Titlebar, settings);
     eWin->window->setPosition(sf::Vector2i(0, 0));
     bool dragStarted = false;
+    int mouseOverIndex = -1;
     sf::RectangleShape indicator[256];
     sf::CircleShape circle(4);
     circle.setOutlineThickness(1);
     UIBuilder ui;
-    ui.addBar("Point");
-    ui.setBarSize("Point", 200, 200);
-    ui.setBarPosition("Point", eWin->parent->getSize().x - 205, 5);
+    ui.addBar("Points");
+    ui.setBarSize("Points", 200, 200);
+    ui.setBarPosition("Points", eWin->parent->getSize().x - 205, 5);
 
     for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
     {
-        ui.addColorControls("Point", "Point " + std::to_string(i), TransferFunction::getControlPointColors(i), "opened=true");
+        ui.addColorControls("Points", "Point " + std::to_string(i + 1), TransferFunction::getControlPointColors(i), "");
     }
 
     for (int i = 0; i < 256; i++)
@@ -74,11 +75,11 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                 if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Middle))
                 {
                     updateTransferFunction(eWin);
-                    TwRemoveAllVars(ui.getBar("Point"));
+                    TwRemoveAllVars(ui.getBar("Points"));
 
                     for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
                     {
-                        ui.addColorControls("Point", "Point " + std::to_string(i), TransferFunction::getControlPointColors(i), "opened=true");
+                        ui.addColorControls("Points", "Point " + std::to_string(i + 1), TransferFunction::getControlPointColors(i), "");
                     }
                 }
             }
@@ -112,10 +113,13 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                 circle.setOutlineColor(sf::Color::Cyan);
                 circle.setPosition(TransferFunction::getControlPoints()[i].isoValue * 3 - 3,
                                    255 - TransferFunction::getControlPoints()[i].rgba[3] * 255);
+                std::cout << mouseOverIndex << std::endl;
 
                 if (isMouseOver(eWin, circle))
                 {
                     circle.setOutlineColor(sf::Color::Green);
+
+                    if (mouseOverIndex == -1) { mouseOverIndex = i; }
 
                     if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
                     {
@@ -133,8 +137,16 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                             TransferFunction::addControlPoint(rgba.r, rgba.g, rgba.b, finalAlphaValue, finalIsoValue);
                         }
                     }
+                    else if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
+                    {
+                        if (i > 0 && i < TransferFunction::getControlPoints().size() - 1)
+                        {
+                            TransferFunction::deleteAlphaControlPoint(i);
+                        }
+                    }
                     else
                     {
+                        mouseOverIndex = -1;
                         dragStarted = false;
                     }
                 }
