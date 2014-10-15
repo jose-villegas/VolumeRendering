@@ -63,7 +63,7 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
 
                 if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Middle))
                 {
-                    updateTransferFunction(eWin);
+                    _updateTransferFunction(eWin);
                     TwRemoveAllVars(ui.getBar("Points"));
 
                     for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
@@ -109,7 +109,7 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                 circle.setPosition(TransferFunction::getControlPoints()[i].isoValue * 3 - 3,
                                    255 - TransferFunction::getControlPoints()[i].rgba[3] * 255);
 
-                if (isMouseOver(eWin, circle))
+                if (_isMouseOver(eWin, circle))
                 {
                     circle.setOutlineColor(sf::Color::Green);
 
@@ -220,7 +220,7 @@ void EditingWindow::loadHistogram(RawDataModel * rawModel)
     isHistLoaded = true;
 }
 
-bool EditingWindow::isMouseOver(EditingWindow * eWin, sf::CircleShape &circle)
+bool EditingWindow::_isMouseOver(EditingWindow * eWin, sf::CircleShape &circle)
 {
     sf::Vector2f mousePos(sf::Mouse::getPosition(*eWin->window));
 
@@ -240,7 +240,7 @@ bool EditingWindow::isMouseOver(EditingWindow * eWin, sf::CircleShape &circle)
     }
 }
 
-void EditingWindow::updateTransferFunction(EditingWindow * eWin)
+void EditingWindow::_updateTransferFunction(EditingWindow * eWin)
 {
     if (sf::Mouse::getPosition(*eWin->window).y > 2 && sf::Mouse::getPosition(*eWin->window).x > 0 &&
             sf::Mouse::getPosition(*eWin->window).x < 769 && sf::Mouse::getPosition(*eWin->window).y < 259)
