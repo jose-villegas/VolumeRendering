@@ -87,21 +87,12 @@ void TransferFunction::getLinearFunction(byte dst[256][4])
 
     for (int i = 0; i < 4; i++)
     {
-        channelThread[i] = std::thread(channelSplineThread, channelSpline[i], channel[4], &channel[i]);
+        channelThread[i] = std::thread(channelSplineThread, channelSpline[i], channel[4], &channel[i], &dst[0][i]);
     }
 
     for (int i = 0; i < 4; i++)
     {
         channelThread[i].join();
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    for (int i = 0; i < 256; i++)
-    {
-        dst[i][0] = (int)channel[0][i];
-        dst[i][1] = (int)channel[1][i];
-        dst[i][2] = (int)channel[2][i];
-        dst[i][3] = (int)channel[3][i];
     }
 }
 
@@ -115,7 +106,7 @@ float * TransferFunction::getControlPointColors(unsigned const int index)
     return controlPoints[index].rgba;
 }
 
-void TransferFunction::channelSplineThread(tk::Spline &spline, std::vector<double> isoV, std::vector<double> * channel)
+void TransferFunction::channelSplineThread(tk::Spline &spline, std::vector<double> isoV, std::vector<double> * channel, byte * dst)
 {
     spline.set_points(isoV, *channel, false);
     int min;
@@ -133,6 +124,12 @@ void TransferFunction::channelSplineThread(tk::Spline &spline, std::vector<doubl
         // Min Value
         min = current < min ? current : min;
         channel->push_back(current);
+    }
+
+    for (int i = 0; i < 256; i++)
+    {
+        *dst = (int)channel->at(i);
+        dst += 4 * sizeof(byte);
     }
 }
 

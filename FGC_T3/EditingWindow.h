@@ -9,9 +9,7 @@ class EditingWindow
     private:
         RawDataModel * rawModel;
         std::thread * windowThread;
-        UIBuilder gui;
         std::array<float, 256> histogram;
-        sf::RectangleShape line[256];
         bool isHistLoaded;
 
         static void _windowRender(EditingWindow * eWin);

@@ -7,13 +7,6 @@ EditingWindow::EditingWindow(void)
     windowThread = NULL;
     parent = window = NULL;
     isHistLoaded = false;
-
-    for (int i = 0; i < 256; i++)
-    {
-        line[i].setFillColor(sf::Color::Red);
-        line[i].setPosition(5 + i * 3, 260);
-        line[i].rotate(270);
-    }
 }
 
 
@@ -37,12 +30,15 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
     settings.minorVersion = 0;
     eWin->window = new sf::RenderWindow(sf::VideoMode(775, 285, 32), "Funcion de Transferencia", sf::Style::Titlebar, settings);
     eWin->window->setPosition(sf::Vector2i(0, 0));
+    UIBuilder ui;
+    sf::RectangleShape indicator;
+    sf::RectangleShape line;
+    sf::CircleShape circle(4);
     bool dragStarted = false;
     int mouseOverIndex = -1;
-    sf::RectangleShape indicator[256];
-    sf::CircleShape circle(4);
     circle.setOutlineThickness(1);
-    UIBuilder ui;
+    line.setFillColor(sf::Color::Red);
+    line.rotate(270);
     ui.addBar("Points");
     ui.setBarSize("Points", 200, 200);
     ui.setBarPosition("Points", eWin->parent->getSize().x - 205, 5);
@@ -50,13 +46,6 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
     for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
     {
         ui.addColorControls("Points", "Point " + std::to_string(i + 1), TransferFunction::getControlPointColors(i), "");
-    }
-
-    for (int i = 0; i < 256; i++)
-    {
-        indicator[i] = sf::RectangleShape(sf::Vector2f(2, 10));
-        indicator[i].setFillColor(sf::Color(i, i, i, i));
-        indicator[i].setPosition(5 + i * 3, 260);
     }
 
     // Histogram
@@ -88,16 +77,22 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
 
             for (int i = 0; i < 256; i++)
             {
-                eWin->line[i].setSize(sf::Vector2f(log10(eWin->histogram[i] * 9 + 1) * 256.0f, 2));
-                eWin->window->draw(eWin->line[i]);
+                line.setSize(sf::Vector2f(log10(eWin->histogram[i] * 9 + 1) * 256.0f, 2));
+                line.setPosition(5 + i * 3, 260);
+                eWin->window->draw(line);
                 //////////////////////////////////////////////////////////////////////////
+                /// Transfer Function Result
                 GLubyte * color = eWin->rawModel->transferFunc[i];
-                indicator[i].setPosition(5 + i * 3, 273);
-                indicator[i].setFillColor(sf::Color((int) * (color), (int) * (color + 1), (int) * (color + 2), (int) * (color + 3)));
-                eWin->window->draw(indicator[i]);
-                indicator[i].setPosition(5 + i * 3, 260);
-                indicator[i].setFillColor(sf::Color(i, i, i, i));
-                eWin->window->draw(indicator[i]);
+                indicator.setSize(sf::Vector2f(3, 10));
+                indicator.setPosition(5 + i * 3, 273);
+                indicator.setFillColor(sf::Color((int) * (color), (int) * (color + 1), (int) * (color + 2), (int) * (color + 3)));
+                eWin->window->draw(indicator);
+                //////////////////////////////////////////////////////////////////////////
+                // Iso Value Indicators
+                indicator.setSize(sf::Vector2f(2, 10));
+                indicator.setPosition(5 + i * 3, 260);
+                indicator.setFillColor(sf::Color(i, i, i, i));
+                eWin->window->draw(indicator);
             }
 
             for (int i = 0; i < TransferFunction::getControlPoints().size(); i++)
@@ -113,7 +108,6 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
                 circle.setOutlineColor(sf::Color::Cyan);
                 circle.setPosition(TransferFunction::getControlPoints()[i].isoValue * 3 - 3,
                                    255 - TransferFunction::getControlPoints()[i].rgba[3] * 255);
-                std::cout << mouseOverIndex << std::endl;
 
                 if (isMouseOver(eWin, circle))
                 {
