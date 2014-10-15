@@ -3,6 +3,7 @@
 #include "RawDataModel.h"
 #include "UIBuilder.h"
 #include "TransferFunction.h"
+#define DRAG_TOLERANCE 5
 
 class EditingWindow
 {

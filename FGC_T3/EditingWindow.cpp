@@ -219,16 +219,17 @@ void EditingWindow::loadHistogram(RawDataModel * rawModel)
     std::transform(histogram.begin(), histogram.end(), histogram.begin(), std::bind1st(std::multiplies<float>(), 1 / maxHistValue));
     isHistLoaded = true;
 }
+
 bool EditingWindow::isMouseOver(EditingWindow * eWin, sf::CircleShape &circle)
 {
     sf::Vector2f mousePos(sf::Mouse::getPosition(*eWin->window));
 
     if
     (
-        mousePos.x > circle.getPosition().x - 5 &&
-        mousePos.x <= circle.getPosition().x + circle.getGlobalBounds().width + 5 &&
-        mousePos.y > circle.getPosition().y - 5 &&
-        mousePos.y <= circle.getPosition().y + circle.getGlobalBounds().height + 5
+        mousePos.x > circle.getPosition().x - DRAG_TOLERANCE &&
+        mousePos.x <= circle.getPosition().x + circle.getGlobalBounds().width + DRAG_TOLERANCE &&
+        mousePos.y > circle.getPosition().y - DRAG_TOLERANCE &&
+        mousePos.y <= circle.getPosition().y + circle.getGlobalBounds().height + DRAG_TOLERANCE
     )
     {
         return true;
@@ -244,10 +245,6 @@ void EditingWindow::updateTransferFunction(EditingWindow * eWin)
     if (sf::Mouse::getPosition(*eWin->window).y > 2 && sf::Mouse::getPosition(*eWin->window).x > 0 &&
             sf::Mouse::getPosition(*eWin->window).x < 769 && sf::Mouse::getPosition(*eWin->window).y < 259)
     {
-        //clickingPoints.push_back(sf::CircleShape(2));
-        //clickingPoints.back().setFillColor(sf::Color::Transparent);
-        //clickingPoints.back().setOutlineThickness(1);
-        //clickingPoints.back().setPosition((sf::Vector2f)sf::Mouse::getPosition(*eWin->window));
         TransferFunction::addControlPoint(255, 255, 255, 255 - sf::Mouse::getPosition(*eWin->window).y + 3,
                                           sf::Mouse::getPosition(*eWin->window).x / 3);
     }
