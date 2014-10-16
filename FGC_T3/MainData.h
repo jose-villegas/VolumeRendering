@@ -1,8 +1,7 @@
 #pragma once
 #include "commons.h"
 
-class MainData
-{
+class MainData {
     public:
         //static RawDataModel * currentModel;
         static sf::RenderWindow * rootWindow;

@@ -25,10 +25,8 @@ void TransferFunction::addControlPoint(int r, int g, int b, int alpha, int isova
     nControlPoint.create(r, g, b, alpha, isovalue);
     auto it = std::lower_bound(controlPoints.begin(), controlPoints.end(), nControlPoint);
 
-    if (!controlPoints.empty() && it != controlPoints.end()) // Real bad code to force isoValue uniqueness
-    {
-        if ((it)->isoValue == nControlPoint.isoValue)
-        {
+    if (!controlPoints.empty() && it != controlPoints.end()) { // Real bad code to force isoValue uniqueness
+        if ((it)->isoValue == nControlPoint.isoValue) {
             nControlPoint.isoValue--;
 
             if (nControlPoint.isoValue < 1) { nControlPoint.isoValue = 1; it++;}
@@ -38,10 +36,8 @@ void TransferFunction::addControlPoint(int r, int g, int b, int alpha, int isova
         auto uniqItRight = it;
         int previusVal = nControlPoint.isoValue;
 
-        while (uniqItLeft != controlPoints.begin())
-        {
-            if ((uniqItLeft - 1)->isoValue == previusVal)
-            {
+        while (uniqItLeft != controlPoints.begin()) {
+            if ((uniqItLeft - 1)->isoValue == previusVal) {
                 (uniqItLeft - 1)->isoValue--;
             }
 
@@ -49,10 +45,8 @@ void TransferFunction::addControlPoint(int r, int g, int b, int alpha, int isova
             uniqItLeft--;
         }
 
-        while (uniqItRight != controlPoints.end() - 1)
-        {
-            if ((uniqItRight + 1)->isoValue == previusVal)
-            {
+        while (uniqItRight != controlPoints.end() - 1) {
+            if ((uniqItRight + 1)->isoValue == previusVal) {
                 (uniqItRight + 1)->isoValue++;
             }
 
@@ -66,6 +60,7 @@ void TransferFunction::addControlPoint(int r, int g, int b, int alpha, int isova
 
 void TransferFunction::getSmoothFunction(byte dst[256][4])
 {
+    // TODO
 }
 
 void TransferFunction::getLinearFunction(byte dst[256][4])
@@ -74,10 +69,8 @@ void TransferFunction::getLinearFunction(byte dst[256][4])
     std::vector<double> channel[5];
     tk::Spline channelSpline[4];
 
-    //////////////////////////////////////////////////////////////////////////
     // Control Points
-    for (int i = 0; i < controlPoints.size(); i++)
-    {
+    for (int i = 0; i < controlPoints.size(); i++) {
         channel[0].push_back(controlPoints[i].rgba[0] * 255);
         channel[1].push_back(controlPoints[i].rgba[1] * 255);
         channel[2].push_back(controlPoints[i].rgba[2] * 255);
@@ -85,13 +78,11 @@ void TransferFunction::getLinearFunction(byte dst[256][4])
         channel[4].push_back(controlPoints[i].isoValue);
     }
 
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         channelThread[i] = std::thread(channelSplineThread, channelSpline[i], channel[4], &channel[i], &dst[0][i]);
     }
 
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
         channelThread[i].join();
     }
 }
@@ -116,8 +107,7 @@ void TransferFunction::channelSplineThread(tk::Spline &spline, std::vector<doubl
     max = 0;
     channel->clear();
 
-    for (int i = 0; i < 256; i++)
-    {
+    for (int i = 0; i < 256; i++) {
         current = (int)spline(i);
         // Max Value
         max = current > max ? current : max;
@@ -126,8 +116,7 @@ void TransferFunction::channelSplineThread(tk::Spline &spline, std::vector<doubl
         channel->push_back(current);
     }
 
-    for (int i = 0; i < 256; i++)
-    {
+    for (int i = 0; i < 256; i++) {
         *dst = (int)channel->at(i);
         dst += 4 * sizeof(byte);
     }

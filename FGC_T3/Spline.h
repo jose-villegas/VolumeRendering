@@ -35,15 +35,12 @@
 
 // unnamed namespace only because the implementation is in this
 // header file and we don't want to export symbols to the obj files
-namespace
-{
+namespace {
 
-    namespace tk
-    {
+    namespace tk {
 
         // band matrix solver
-        class band_matrix
-        {
+        class band_matrix {
             private:
                 std::vector< std::vector<double> > m_upper;  // upper band
                 std::vector< std::vector<double> > m_lower;  // lower band
@@ -77,8 +74,7 @@ namespace
 
 
         // spline interpolation
-        class Spline
-        {
+        class Spline {
             private:
                 std::vector<double> m_x, m_y;          // x,y coordinates of points
                 // interpolation parameters
@@ -117,24 +113,19 @@ namespace
             m_upper.resize(n_u + 1);
             m_lower.resize(n_l + 1);
 
-            for (size_t i = 0; i < m_upper.size(); i++)
-            {
+            for (size_t i = 0; i < m_upper.size(); i++) {
                 m_upper[i].resize(dim);
             }
 
-            for (size_t i = 0; i < m_lower.size(); i++)
-            {
+            for (size_t i = 0; i < m_lower.size(); i++) {
                 m_lower[i].resize(dim);
             }
         }
         int band_matrix::dim() const
         {
-            if (m_upper.size() > 0)
-            {
+            if (m_upper.size() > 0) {
                 return m_upper[0].size();
-            }
-            else
-            {
+            } else {
                 return 0;
             }
         }
@@ -183,15 +174,13 @@ namespace
 
             // preconditioning
             // normalize column i so that a_ii=1
-            for (int i = 0; i < this->dim(); i++)
-            {
+            for (int i = 0; i < this->dim(); i++) {
                 assert(this->operator()(i, i) != 0.0);
                 this->saved_diag(i) = 1.0 / this->operator()(i, i);
                 j_min = std::max(0, i - this->num_lower());
                 j_max = std::min(this->dim() - 1, i + this->num_upper());
 
-                for (int j = j_min; j <= j_max; j++)
-                {
+                for (int j = j_min; j <= j_max; j++) {
                     this->operator()(i, j) *= this->saved_diag(i);
                 }
 
@@ -199,19 +188,16 @@ namespace
             }
 
             // Gauss LR-Decomposition
-            for (int k = 0; k < this->dim(); k++)
-            {
+            for (int k = 0; k < this->dim(); k++) {
                 i_max = std::min(this->dim() - 1, k + this->num_lower()); // num_lower not a mistake!
 
-                for (int i = k + 1; i <= i_max; i++)
-                {
+                for (int i = k + 1; i <= i_max; i++) {
                     assert(this->operator()(k, k) != 0.0);
                     x = -this->operator()(i, k) / this->operator()(k, k);
                     this->operator()(i, k) = -x;                      // assembly part of L
                     j_max = std::min(this->dim() - 1, k + this->num_upper());
 
-                    for (int j = k + 1; j <= j_max; j++)
-                    {
+                    for (int j = k + 1; j <= j_max; j++) {
                         // assembly part of R
                         this->operator()(i, j) = this->operator()(i, j) + x * this->operator()(k, j);
                     }
@@ -226,8 +212,7 @@ namespace
             int j_start;
             double sum;
 
-            for (int i = 0; i < this->dim(); i++)
-            {
+            for (int i = 0; i < this->dim(); i++) {
                 sum = 0;
                 j_start = std::max(0, i - this->num_lower());
 
@@ -246,8 +231,7 @@ namespace
             int j_stop;
             double sum;
 
-            for (int i = this->dim() - 1; i >= 0; i--)
-            {
+            for (int i = this->dim() - 1; i >= 0; i--) {
                 sum = 0;
                 j_stop = std::min(this->dim() - 1, i + this->num_upper());
 
@@ -265,8 +249,7 @@ namespace
             assert(this->dim() == (int)b.size());
             std::vector<double>  x, y;
 
-            if (is_lu_decomposed == false)
-            {
+            if (is_lu_decomposed == false) {
                 this->lu_decompose();
             }
 
@@ -291,20 +274,17 @@ namespace
             int   n = x.size();
 
             // TODO sort x and y, rather than returning an error
-            for (int i = 0; i < n - 1; i++)
-            {
+            for (int i = 0; i < n - 1; i++) {
                 assert(m_x[i] < m_x[i + 1]);
             }
 
-            if (cubic_spline == true) // cubic spline interpolation
-            {
+            if (cubic_spline == true) { // cubic spline interpolation
                 // setting up the matrix and right hand side of the equation system
                 // for the parameters b[]
                 band_matrix A(n, 1, 1);
                 std::vector<double>  rhs(n);
 
-                for (int i = 1; i < n - 1; i++)
-                {
+                for (int i = 1; i < n - 1; i++) {
                     A(i, i - 1) = 1.0 / 3.0 * (x[i] - x[i - 1]);
                     A(i, i) = 2.0 / 3.0 * (x[i + 1] - x[i - 1]);
                     A(i, i + 1) = 1.0 / 3.0 * (x[i + 1] - x[i]);
@@ -324,21 +304,17 @@ namespace
                 m_a.resize(n);
                 m_c.resize(n);
 
-                for (int i = 0; i < n - 1; i++)
-                {
+                for (int i = 0; i < n - 1; i++) {
                     m_a[i] = 1.0 / 3.0 * (m_b[i + 1] - m_b[i]) / (x[i + 1] - x[i]);
                     m_c[i] = (y[i + 1] - y[i]) / (x[i + 1] - x[i])
                              - 1.0 / 3.0 * (2.0 * m_b[i] + m_b[i + 1]) * (x[i + 1] - x[i]);
                 }
-            }
-            else     // linear interpolation
-            {
+            } else { // linear interpolation
                 m_a.resize(n);
                 m_b.resize(n);
                 m_c.resize(n);
 
-                for (int i = 0; i < n - 1; i++)
-                {
+                for (int i = 0; i < n - 1; i++) {
                     m_a[i] = 0.0;
                     m_b[i] = 0.0;
                     m_c[i] = (m_y[i + 1] - m_y[i]) / (m_x[i + 1] - m_x[i]);
@@ -363,18 +339,13 @@ namespace
             double h = x - m_x[idx];
             double interpol;
 
-            if (x < m_x[0])
-            {
+            if (x < m_x[0]) {
                 // extrapolation to the left
                 interpol = ((m_b[0]) * h + m_c[0]) * h + m_y[0];
-            }
-            else if (x > m_x[n - 1])
-            {
+            } else if (x > m_x[n - 1]) {
                 // extrapolation to the right
                 interpol = ((m_b[n - 1]) * h + m_c[n - 1]) * h + m_y[n - 1];
-            }
-            else
-            {
+            } else {
                 // interpolation
                 interpol = ((m_a[idx] * h + m_b[idx]) * h + m_c[idx]) * h + m_y[idx];
             }

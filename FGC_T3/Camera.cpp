@@ -12,10 +12,8 @@ float Camera::camSpeed = 10;
 
 glm::mat4 Camera::getViewMatrix()
 {
-    //////////////////////////////////////////////////////////////////////////
     // FPS CAMERA MODE
     lookAtPosition = position + direction;
-    //////////////////////////////////////////////////////////////////////////
     return glm::lookAt(position, lookAtPosition, upVector);
 }
 

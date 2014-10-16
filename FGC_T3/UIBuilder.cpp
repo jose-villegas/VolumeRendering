@@ -119,8 +119,7 @@ TwBar * UIBuilder::getBar(std::string sBarName)
 
 void TW_CALL fileDialogButtonOnCB(void * clientData)
 {
-    struct OpenFileDialog
-    {
+    struct OpenFileDialog {
         static void show(char * sFilePath)
         {
             OPENFILENAME ofn;       // common dialog box structure
@@ -144,8 +143,7 @@ void TW_CALL fileDialogButtonOnCB(void * clientData)
             ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
             // Display the Open dialog box.
-            if (GetOpenFileName(&ofn) == TRUE)
-            {
+            if (GetOpenFileName(&ofn) == TRUE) {
                 std::string filename = szFile;
                 const size_t last_slash_idx = filename.find_last_of("\\/");
                 memcpy(sFilePath, &szFile[last_slash_idx + 1], 1024);

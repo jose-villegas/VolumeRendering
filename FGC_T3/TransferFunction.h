@@ -2,19 +2,16 @@
 #include "commons.h"
 #include "Spline.h"
 
-class ControlPoint
-{
+class ControlPoint {
     public:
         float rgba[4];
         int isoValue;
 
         void create(int r, int g, int b, int alpha, int isovalue);
-
         friend bool operator<(ControlPoint const &a, ControlPoint const &b);
 };
 
-class TransferFunction
-{
+class TransferFunction {
     private:
         static std::vector<ControlPoint> controlPoints;
     public:

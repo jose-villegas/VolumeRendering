@@ -74,15 +74,13 @@ void initGlew()
     // Initialize GLEW
     glewExperimental = true; // Needed for core profile
 
-    if (glewInit() != GLEW_OK)
-    {
+    if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to initialize GLEW\n");
         return;
     }
 }
 
-struct Callbacks
-{
+struct Callbacks {
     static void TW_CALL loadModelClick(void * clientData)
     {
         rawModel->load(rawModel->sModelName, rawModel->width, rawModel->height, rawModel->numCuts);
@@ -96,8 +94,7 @@ void guiSetup(sf::Window &window, UIBuilder &gui)
     gui.init(window.getSize().x, window.getSize().y);
     // Custom Point Type
     struct Point { float X, Y, Z; };
-    TwStructMember pointMembers[] =
-    {
+    TwStructMember pointMembers[] = {
         { "X", TW_TYPE_FLOAT, offsetof(Point, X), " Step=0.001 keyIncr='d' keyDecr='a' "},
         { "Y", TW_TYPE_FLOAT, offsetof(Point, Y), " Step=0.001 keyIncr='s' keyDecr='w' " },
         { "Z", TW_TYPE_FLOAT, offsetof(Point, Z), " Step=0.001 keyIncr='-' keyDecr='+' " }
@@ -128,24 +125,18 @@ void guiSetup(sf::Window &window, UIBuilder &gui)
 
 void Render(sf::RenderWindow &window, sf::Clock &frameClock)
 {
-    while (window.isOpen())
-    {
+    while (window.isOpen()) {
         sf::Event event;
 
-        while (window.pollEvent(event))
-        {
+        while (window.pollEvent(event)) {
             // Send event to AntTweakBar
             int handled = TwEventSFML(&event, 1, 6);
 
-            if (!handled)
-            {
-                if (event.type == sf::Event::Closed)
-                {
+            if (!handled) {
+                if (event.type == sf::Event::Closed) {
                     rawModel->isLoaded = false;
                     window.close();
-                }
-                else if (event.type == sf::Event::Resized)
-                {
+                } else if (event.type == sf::Event::Resized) {
                     // adjust the viewport when the window is resized
                     glViewport(0, 0, event.size.width, event.size.height);
                 }

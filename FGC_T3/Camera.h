@@ -1,8 +1,7 @@
 #pragma once
 #include "GL\glm\gtc\matrix_transform.hpp"
 
-class Camera
-{
+class Camera {
     public:
         static float camSpeed;
         static glm::vec3 direction; // For FPS Mode

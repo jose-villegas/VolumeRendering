@@ -1,8 +1,7 @@
 #pragma once
 #include "commons.h"
 
-class VolumeShader
-{
+class VolumeShader {
     public:
         VolumeShader(void);
         ~VolumeShader(void);
@@ -27,9 +26,9 @@ class VolumeShader
         GLint backFaceLoc;
         GLint volumeLoc;
 
-        GLuint initShaderObj(const GLchar * srcfile, GLenum shaderType);
-        GLboolean compileCheck(GLuint shader);
-        GLuint createShaderPgm();
-        void linkShader(GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHandle);
+        GLuint _initShaderObj(const GLchar * srcfile, GLenum shaderType);
+        GLuint _createShaderPgm();
+        GLboolean _compileCheck(GLuint shader);
+        void _linkShader(GLuint shaderPgm, GLuint newVertHandle, GLuint newFragHandle);
 };
 
