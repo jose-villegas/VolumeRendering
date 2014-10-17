@@ -10,7 +10,6 @@ out vec3 EntryPoint;
 out vec4 ExitPointCoord;
 
 uniform mat4 MVP;
-uniform mat4 ViewMatrix;
 
 void main()
 {

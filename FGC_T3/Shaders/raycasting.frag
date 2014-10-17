@@ -14,20 +14,19 @@ void main()
 {
     vec3 exitPoint = texture(ExitPoints, gl_FragCoord.st / ScreenSize).xyz;
 
-    if (EntryPoint == exitPoint) //background need no raycasting
+    if (EntryPoint == exitPoint)//background need no raycasting
     {
         discard;
     }
 
-    vec3 dir = exitPoint - EntryPoint; // Ray Direction 
+    vec3 dir = exitPoint - EntryPoint;
     float len = length(dir); // the length from front to back is calculated and used to terminate the ray
     vec3 deltaDir = normalize(dir) * StepSize;
     float deltaDirLen = length(deltaDir);
-    vec4 colorAcum = vec4(0.0); // The dest color
-    vec4 intensitySample; // Intensity Sampler    
     vec3 voxelCoord = EntryPoint;
-    vec3 lastnorm = texture(VolumeTex, voxelCoord).xyz * 2.0 - vec3(1.0);
+    vec4 colorAcum = vec4(0.0); // The dest color
     float alphaAcum = 0.0;                // The  dest alpha for blending
+    float intensity;
     float lengthAcum = 0.0;
     vec4 colorSample; // The src color
     float alphaSample; // The src alpha
@@ -36,8 +35,9 @@ void main()
 
     for (int i = 0; i < 1600; i++)
     {
-        intensitySample = texture(VolumeTex, voxelCoord);
-        colorSample = texture(TransferFunc, intensitySample.x);  
+        intensity =  texture(VolumeTex, voxelCoord).x;
+        colorSample = texture(TransferFunc, intensity);
+		// colorSample = vec4(intensity);
 
         // modulate the value of colorSample.a
         // front-to-back integration

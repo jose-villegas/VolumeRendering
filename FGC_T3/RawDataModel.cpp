@@ -218,16 +218,6 @@ void RawDataModel::_renderCubeFace(GLenum gCullFace)
     glm::mat4 mvp = projection * view * model;    // notice the multiplication order: reverse order of transform
     GLuint mvpIdx = glGetUniformLocation(programHandle, "MVP");
 
-    if (gCullFace == GL_BACK) {
-        GLuint vmLoc = glGetUniformLocation(programHandle, "ViewMatrix");
-
-        if (vmLoc >= 0) {
-            glUniformMatrix4fv(vmLoc, 1, GL_FALSE, &view[0][0]);
-        } else {
-            std::cerr << "can't get the View Matrix" << std::endl;
-        }
-    }
-
     if (mvpIdx >= 0) {
         glUniformMatrix4fv(mvpIdx, 1, GL_FALSE, &mvp[0][0]);
     } else {
