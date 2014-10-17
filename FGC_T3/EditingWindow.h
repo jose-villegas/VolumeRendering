@@ -8,7 +8,6 @@
 class EditingWindow {
     private:
         RawDataModel * rawModel;
-        std::thread * windowThread;
         std::array<float, 256> histogram;
         bool isHistLoaded;
         bool dragStarted;
@@ -24,6 +23,7 @@ class EditingWindow {
         static void _windowRender(EditingWindow * eWin);
         static void _inputControl(EditingWindow * eWin, UIBuilder &ui);
     public:
+        std::thread * windowThread;
         sf::RenderWindow * parent;
         sf::RenderWindow * window;
 

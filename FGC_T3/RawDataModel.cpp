@@ -42,9 +42,10 @@ void RawDataModel::load(const char * pszFilepath, int width, int height, int num
     if (!_initFrameBuffer()) { return; }
 
     // Success
-    this->width = width;
-    this->height = height;
-    this->numCuts = numCuts;
+    this->_widthP = width;
+    this->_heightP = height;
+    this->_numCutsP = numCuts;
+    _normalizedBBox = glm::vec3(_widthP / _numCutsP, _heightP / _numCutsP, _numCutsP / _numCutsP);
     memcpy(sModelName, pszFilepath, 1024);
     isLoaded = true;
 }
@@ -212,11 +213,20 @@ void RawDataModel::_renderCubeFace(GLenum gCullFace)
     glm::mat4 projection = glm::perspective(90.0f, (GLfloat)MainData::rootWindow->getSize().x / MainData::rootWindow->getSize().y, 0.1f, 500.f);
     glm::mat4 view = Camera::getViewMatrix();
     glm::mat4 model = glm::mat4_cast(rotation);
-    glm::vec3 normalizedBBox = glm::vec3(width / numCuts, height / numCuts, numCuts / numCuts);
-    model = glm::translate(model, glm::vec3(-normalizedBBox.x / 2, -normalizedBBox.y / 2, -normalizedBBox.z / 2));
-    model = glm::scale(model, normalizedBBox);
+    model = glm::translate(model, glm::vec3(-_normalizedBBox.x / 2, -_normalizedBBox.y / 2, -_normalizedBBox.z / 2));
+    model = glm::scale(model, _normalizedBBox);
     glm::mat4 mvp = projection * view * model;    // notice the multiplication order: reverse order of transform
     GLuint mvpIdx = glGetUniformLocation(programHandle, "MVP");
+
+    if (gCullFace == GL_BACK) {
+        GLuint vmLoc = glGetUniformLocation(programHandle, "ViewMatrix");
+
+        if (vmLoc >= 0) {
+            glUniformMatrix4fv(vmLoc, 1, GL_FALSE, &view[0][0]);
+        } else {
+            std::cerr << "can't get the View Matrix" << std::endl;
+        }
+    }
 
     if (mvpIdx >= 0) {
         glUniformMatrix4fv(mvpIdx, 1, GL_FALSE, &mvp[0][0]);

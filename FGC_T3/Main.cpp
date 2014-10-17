@@ -49,8 +49,10 @@ int main()
     // Initialze Main Loop
     Render(window, *MainData::frameClock);
     // Free Memory
-    //delete rawModel;
-    //delete eWindow;
+    rawModel->~RawDataModel();
+    eWindow->windowThread->join();
+    eWindow->~EditingWindow();
+    TwTerminate();
     return 0;
 }
 
@@ -119,8 +121,9 @@ void guiSetup(sf::Window &window, UIBuilder &gui)
     // Model Controls
     gui.addBar("Modelo");
     gui.setBarPosition("Modelo", 5, 325);
-    gui.setBarSize("Modelo", 200, 120);
-    gui.addRotationControls("Modelo", "Rotacion", &rawModel->rotation, "opened=true showval=true");
+    gui.setBarSize("Modelo", 200, 200);
+    gui.addRotationControls("Modelo", "Rotacion", &rawModel->rotation, "opened=true");
+    gui.addFloatNumber("Modelo", "Step Size", &rawModel->stepSize, "step=0.0001 min=0.001");
 }
 
 void Render(sf::RenderWindow &window, sf::Clock &frameClock)

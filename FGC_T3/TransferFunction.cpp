@@ -50,7 +50,7 @@ void TransferFunction::addControlPoint(int r, int g, int b, int alpha, int isova
                 (uniqItRight + 1)->isoValue++;
             }
 
-            previusVal = (uniqItRight - 1)->isoValue;
+            previusVal = (uniqItRight)->isoValue;
             uniqItRight++;
         }
     }

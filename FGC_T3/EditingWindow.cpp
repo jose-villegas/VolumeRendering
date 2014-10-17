@@ -44,10 +44,10 @@ void EditingWindow::_windowRender(EditingWindow * eWin)
             while (eWin->window->pollEvent(event)) {
                 if (event.type == sf::Event::MouseButtonPressed && sf::Mouse::isButtonPressed(sf::Mouse::Middle)) {
                     _updateTransferFunction(eWin);
-                    TwRemoveAllVars(ui.getBar("Points"));
+                    TwRemoveAllVars(ui.getBar("Funcion de Transferencia"));
 
                     for (int i = 0; i < TransferFunction::getControlPoints().size(); i++) {
-                        ui.addColorControls("Points", "Point " + std::to_string(i + 1), TransferFunction::getControlPointColors(i), "");
+                        ui.addColorControls("Funcion de Transferencia", "Punto " + std::to_string(i + 1), TransferFunction::getControlPointColors(i), "");
                     }
                 }
             }
@@ -138,12 +138,12 @@ void EditingWindow::_updateTransferFunction(EditingWindow * eWin)
 
 void EditingWindow::_initEditingWindowUI(UIBuilder &ui, EditingWindow * eWin)
 {
-    ui.addBar("Points");
-    ui.setBarSize("Points", 200, 200);
-    ui.setBarPosition("Points", eWin->parent->getSize().x - 205, 5);
+    ui.addBar("Funcion de Transferencia");
+    ui.setBarSize("Funcion de Transferencia", 200, 200);
+    ui.setBarPosition("Funcion de Transferencia", eWin->parent->getSize().x - 205, 5);
 
     for (int i = 0; i < TransferFunction::getControlPoints().size(); i++) {
-        ui.addColorControls("Points", "Point " + std::to_string(i + 1), TransferFunction::getControlPointColors(i), "");
+        ui.addColorControls("Funcion de Transferencia", "Punto " + std::to_string(i + 1), TransferFunction::getControlPointColors(i), "");
     }
 }
 

@@ -7,8 +7,7 @@
 #include "GL\glm\gtc\quaternion.hpp"
 #include "Camera.h"
 
-class RawDataModel: VolumeShader
-{
+class RawDataModel: VolumeShader {
     private:
         GLuint _backFace2DTex;
         GLuint _depthRenderBuffer;
@@ -16,9 +15,12 @@ class RawDataModel: VolumeShader
         GLuint _gVao;
         GLuint _tFunc1DTex;
         GLuint _volume3DTex;
+        glm::vec3 _normalizedBBox;
+        int _heightP;
+        int _numCutsP;
+        int _widthP;
 
         bool _initVBO();
-
         bool _init2DBackfaceTex();
         bool _init3DVolumeTex(const char * pszFilepath, int width, int height, int numCuts);
         bool _initFrameBuffer();
@@ -26,10 +28,10 @@ class RawDataModel: VolumeShader
     public:
         GLubyte * data;
         GLubyte transferFunc[256][4];
+        glm::quat rotation;
         bool isLoaded;
         char * sModelName;
         float stepSize;
-        glm::quat rotation;
         int height;
         int numCuts;
         int width;
