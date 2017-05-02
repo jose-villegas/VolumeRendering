@@ -1,0 +1,46 @@
+#version 430 compatibility
+#extension GL_ARB_shader_image_load_store : require
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding=0, r8ui) uniform readonly uimage3D volume;
+layout(std430, binding=1) coherent buffer Histogram
+{
+    uint histogramData[256];
+};
+
+shared uint sharedHistogram[256];
+
+void main()
+{
+    // initialize shared variable and set global to zeroes
+    sharedHistogram[gl_LocalInvocationID.x] = 0;
+
+    // synchronize
+    barrier();
+    memoryBarrierShared();
+
+    // calculate sharedHistogram values
+    uvec3 volumeSize = imageSize(volume);
+    uint totalSize = volumeSize.x * volumeSize.y * volumeSize.z;
+    uint workLoadPerThread = uint(ceil(totalSize / 256));
+    uint begin = gl_LocalInvocationID.x * workLoadPerThread;
+    uint end = min(begin + workLoadPerThread, totalSize);
+
+    for(uint i = begin; i < end; i++)
+    {
+        ivec3 uvs;
+        uvs.x = int(i % volumeSize.x);
+		uvs.y = int(((i - uvs.x) / volumeSize.x) % volumeSize.y);
+		uvs.z = int((i - uvs.x) / (volumeSize.y * volumeSize.x));
+
+        uint value = imageLoad(volume, uvs).r;
+        atomicAdd(sharedHistogram[value], 1);
+    }
+
+    // synchronize
+    barrier();
+    memoryBarrierShared();
+
+    // save to global sharedHistogram
+    atomicAdd(histogramData[gl_LocalInvocationID.x], sharedHistogram[gl_LocalInvocationID.x]);
+}

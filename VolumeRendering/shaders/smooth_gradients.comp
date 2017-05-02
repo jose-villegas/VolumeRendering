@@ -1,0 +1,60 @@
+#version 430
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+layout(binding=1, rg16f) uniform volatile image3D gradients;
+
+// Spheremap Transform for normal encoding. Used in Cry Engine 3, presented by 
+// Martin Mittring in "A bit more Deferred", p. 13
+// http://www.crytek.com/sites/default/files/A_bit_more_deferred_-_CryEngine3.ppt
+vec4 encode (vec3 n)
+{
+    return vec4(normalize(n.xy) * sqrt(n.z * 0.5 + 0.5), 0, 0);
+}
+
+// Spheremap Transform for normal encoding. Used in Cry Engine 3, presented by 
+// Martin Mittring in "A bit more Deferred", p. 13
+// http://www.crytek.com/sites/default/files/A_bit_more_deferred_-_CryEngine3.ppt
+vec3 decode (vec2 enc)
+{
+    vec3 n;
+    n.z = dot(enc, enc) * 2.0 - 1.0;
+    n.xy = normalize(enc.xy) * sqrt(1.0 - n.z * n.z);
+    return n;
+}
+
+void main()
+{
+    ivec3 pos = ivec3(gl_GlobalInvocationID);
+    uvec3 volumeSize = imageSize(gradients);
+    vec3 average = vec3(0);
+    int sampleCount = 0;
+
+    // average neighbor values
+    for (int k = pos.z - 3; k <= pos.z + 3; k++)
+    {
+        for (int j = pos.y - 3; j <= pos.y + 3; j++)
+        {
+            for (int i = pos.x - 3; i <= pos.x + 3; i++)
+            {
+                // in bounds
+                if((i >= 0 && i < volumeSize.x) && 
+                   (j >= 0 && j < volumeSize.y) && 
+                   (k >= 0 && k < volumeSize.z))
+                {
+                    average += decode(imageLoad(gradients, ivec3(i, j, k)).rg);
+                    sampleCount++;
+                }
+            }
+        }
+    }
+
+    average /= float(sampleCount);
+
+    // synchronize
+    barrier();
+    memoryBarrierShared();
+
+    // save smoothed gradient
+    imageStore(gradients, pos, encode(normalize(average)));
+}
+

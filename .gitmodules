@@ -1,0 +1,3 @@
+[submodule "VolumeStyleRendering/external/Cinder-ImGui"]
+	path = VolumeStyleRendering/external/Cinder-ImGui
+	url = git@github.com:simongeilfus/Cinder-ImGui.git
