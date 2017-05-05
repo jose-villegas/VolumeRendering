@@ -11,73 +11,9 @@ TransferFunction::TransferFunction() : threshold(vec2(0, 255))
 
     alphaPoints.push_back(TransferFunctionAlphaPoint(1.0, 0));
     alphaPoints.push_back(TransferFunctionAlphaPoint(1.0, 255));
-
-    updateFunction();
 }
 
 TransferFunction::~TransferFunction() {}
-
-std::vector<TransferFunction::Cubic> TransferFunction::CalculateCubicSpline(std::vector<vec3> points)
-{
-    auto n = points.size() - 1;
-    auto& v = points;
-    std::vector<vec3> gamma(n + 1);
-    std::vector<vec3> delta(n + 1);
-    std::vector<vec3> D(n + 1);
-
-    int i;
-    /* We need to solve the equation
-    * taken from: http://mathworld.wolfram.com/CubicSpline.html
-    [2 1       ] [D[0]]   [3(v[1] - v[0])  ]
-    |1 4 1     | |D[1]|   |3(v[2] - v[0])  |
-    |  1 4 1   | | .  | = |      .         |
-    |    ..... | | .  |   |      .         |
-    |     1 4 1| | .  |   |3(v[n] - v[n-2])|
-    [       1 2] [D[n]]   [3(v[n] - v[n-1])]
-
-    by converting the matrix to upper triangular.
-    The D[i] are the derivatives at the control points.
-    */
-
-    //this builds the coefficients of the left matrix
-    gamma[0] = vec3(0);
-    gamma[0].x = 1.0f / 2.0f;
-    gamma[0].y = 1.0f / 2.0f;
-    gamma[0].z = 1.0f / 2.0f;
-
-    for (i = 1; i < n; i++)
-    {
-        gamma[i] = vec3(1) / ((4.0f * vec3(1)) - gamma[i - 1]);
-    }
-
-    gamma[n] = vec3(1) / ((2.0f * vec3(1)) - gamma[n - 1]);
-
-    delta[0] = 3.0f * (v[1] - v[0]) * gamma[0];
-
-    for (i = 1; i < n; i++)
-    {
-        delta[i] = (3.0f * (v[i + 1] - v[i - 1]) - delta[i - 1]) * gamma[i];
-    }
-
-    delta[n] = (3.0f * (v[n] - v[n - 1]) - delta[n - 1]) * gamma[n];
-
-    D[n] = delta[n];
-
-    for (i = n - 1; i >= 0; i--)
-    {
-        D[i] = delta[i] - gamma[i] * D[i + 1];
-    }
-
-    // now compute the coefficients of the cubics 
-    std::vector<Cubic> C(n);
-
-    for (i = 0; i < n; i++)
-    {
-        C[i] = Cubic(v[i], D[i], 3.0f * (v[i + 1] - v[i]) - 2.0f * D[i] - D[i + 1], 2.0f * (v[i] - v[i + 1]) + D[i] + D[i + 1]);
-    }
-
-    return C;
-}
 
 void TransferFunction::addColorPoint(const vec3& color, const int isoValue)
 {
@@ -107,42 +43,46 @@ void TransferFunction::addAlphaPoint(const float alpha, const int isoValue)
     updateFunction();
 }
 
-void TransferFunction::removeColorPoint(const int isoValue)
+void TransferFunction::removeColorPoint(const int index)
 {
     // off limits
-    if (isoValue <= 0 || isoValue >= colorPoints.back().getIsoValue())
+    if (index <= 0 || index >= colorPoints.size())
     {
         return;
     }
 
-    colorPoints.erase(std::remove_if(colorPoints.begin(), colorPoints.end(),
-                                     [=](const TransferFunctionColorPoint& p)
-                                     {
-                                         return p.getIsoValue() == isoValue;
-                                     }));
+    colorPoints.erase(colorPoints.begin() + index);
     updateFunction();
 }
 
-void TransferFunction::removeAlphaPoint(const int isoValue)
+void TransferFunction::removeAlphaPoint(const int index)
 {
     // off limits
-    if (isoValue <= 0 || isoValue >= alphaPoints.back().getIsoValue())
+    if (index <= 0 || index >= alphaPoints.size())
     {
         return;
     }
 
-    alphaPoints.erase(std::remove_if(alphaPoints.begin(), alphaPoints.end(),
-                                     [=](const TransferFunctionAlphaPoint& p)
-                                     {
-                                         return p.getIsoValue() == isoValue;
-                                     }));
+    alphaPoints.erase(alphaPoints.begin() + index);
+    updateFunction();
+}
+
+void TransferFunction::setAlpha(const int index, const float alpha)
+{
+    // off limits
+    if (index < 0 || index >= alphaPoints.size())
+    {
+        return;
+    }
+
+    alphaPoints[index].setAlpha(clamp(alpha, 0.0f, 1.0f));
     updateFunction();
 }
 
 void TransferFunction::setThreshold(int minIso, int maxIso)
 {
-    minIso = min(max(0, minIso), maxIso - 1);
-    maxIso = max(min(255, maxIso), minIso - 1);
+    minIso = clamp(minIso, 0, maxIso - 1);
+    maxIso = clamp(maxIso, minIso + 1, 255);
 
     threshold.x = minIso;
     threshold.y = maxIso;
@@ -151,59 +91,6 @@ void TransferFunction::setThreshold(int minIso, int maxIso)
 const ivec2& TransferFunction::getThreshold() const
 {
     return threshold;
-}
-
-TransferFunction::Cubic::Cubic(vec3 a, vec3 b, vec3 c, vec3 d)
-{
-    this->a = a;
-    this->b = b;
-    this->c = c;
-    this->d = d;
-}
-
-vec3 TransferFunction::Cubic::getPointOnSpline(float s) const
-{
-    return (((d * s) + c) * s + b) * s + a;
-}
-
-void TransferFunction::updateFunction()
-{
-    std::vector<vec3> alphaCtrPoints(alphaPoints.size());
-    std::vector<vec3> colorCtrPoints(colorPoints.size());
-
-    for (int i = 0; i < alphaCtrPoints.size(); i++)
-    {
-        alphaCtrPoints[i] = vec3(alphaPoints[i].getAlpha());
-    }
-
-    for (int i = 0; i < colorCtrPoints.size(); i++)
-    {
-        colorCtrPoints[i] = colorPoints[i].getColor();
-    }
-
-    alphaSpline = move(CalculateCubicSpline(alphaCtrPoints));
-    colorSpline = move(CalculateCubicSpline(colorCtrPoints));
-
-    // update fast access transfer function
-    for (int i = 0; i < indexedTransferFunction.size(); i++)
-    {
-        indexedTransferFunction[i] = getColor(static_cast<float>(i) / 255);
-    }
-
-    // update texture
-    if (!transferFunctionTexture)
-    {
-        auto format = gl::Texture1d::Format().minFilter(GL_LINEAR)
-                                             .magFilter(GL_LINEAR)
-                                             .wrapS(GL_CLAMP_TO_EDGE)
-                                             .internalFormat(GL_RGBA);
-        format.setDataType(GL_FLOAT);
-        transferFunctionTexture = gl::Texture1d::create(indexedTransferFunction.data(), GL_RGBA, 256, format);
-    }
-    else
-    {
-        transferFunctionTexture->update(indexedTransferFunction.data(), GL_RGBA, GL_FLOAT, 0, 256, 0);
-    }
 }
 
 vec4 TransferFunction::getColor(const float t)
@@ -259,7 +146,127 @@ vec4 TransferFunction::getColor(const int isoValue)
     return indexedTransferFunction[isoValue];
 }
 
-const gl::Texture1dRef &TransferFunction::get1DTexture() const
+void TransferFunction::updateFunction()
 {
-    return transferFunctionTexture;
+    std::vector<vec3> alphaCtrPoints(alphaPoints.size());
+    std::vector<vec3> colorCtrPoints(colorPoints.size());
+
+    for (int i = 0; i < alphaCtrPoints.size(); i++)
+    {
+        alphaCtrPoints[i] = vec3(alphaPoints[i].getAlpha());
+    }
+
+    for (int i = 0; i < colorCtrPoints.size(); i++)
+    {
+        colorCtrPoints[i] = colorPoints[i].getColor();
+    }
+
+    alphaSpline = move(CubicSpline::CalculateCubicSpline(alphaCtrPoints));
+    colorSpline = move(CubicSpline::CalculateCubicSpline(colorCtrPoints));
+
+    // update fast access transfer function
+    for (int i = 0; i < indexedTransferFunction.size(); i++)
+    {
+        indexedTransferFunction[i] = getColor(static_cast<float>(i) / 255);
+    }
+
+    // update texture needs to be update on next query
+    updateColorTexture = true;
+}
+
+const std::vector<TransferFunctionColorPoint> &TransferFunction::getColorPoints() const
+{
+    return colorPoints;
+}
+
+const std::vector<TransferFunctionAlphaPoint> &TransferFunction::getAlphaPoints() const
+{
+    return alphaPoints;
+}
+
+const std::array<vec4, 256> &TransferFunction::getIndexedTransferFunction() const
+{
+    return indexedTransferFunction;
+}
+
+const gl::Texture1dRef& TransferFunction::getColorMappingTexture()
+{
+    // update texture
+    if (!colorMappingTexture)
+    {
+        updateFunction();
+        auto format = gl::Texture1d::Format().minFilter(GL_LINEAR)
+            .magFilter(GL_LINEAR)
+            .wrapS(GL_CLAMP_TO_EDGE)
+            .internalFormat(GL_RGBA);
+        format.setDataType(GL_FLOAT);
+        colorMappingTexture = gl::Texture1d::create(getIndexedTransferFunction().data(), GL_RGBA, 256, format);
+    }
+    else if (updateColorTexture)
+    {
+        colorMappingTexture->update(getIndexedTransferFunction().data(), GL_RGBA, GL_FLOAT, 0, 256, 0);
+        updateColorTexture = true;
+    }
+
+    return colorMappingTexture;
+}
+
+void TransferFunction::setColor(const int index, const vec3& color)
+{
+    // off limits
+    if (index < 0 || index >= colorPoints.size())
+    {
+        return;
+    }
+
+    colorPoints[index].setColor(clamp(color, vec3(0), vec3(1)));
+    updateFunction();
+}
+
+void TransferFunction::setAlphaPointIsoValue(const int index, const int isoValue)
+{
+    // off limits
+    if (index <= 0 || index >= alphaPoints.size())
+    {
+        return;
+    }
+
+    // off limits iso val
+    if (isoValue <= 0 || isoValue >= 255)
+    {
+        return;
+    }
+
+    alphaPoints[index].setIsoValue(isoValue);
+
+    // function points may need sorting after modiying sorting token, isoValue
+    bool needSorting = !is_sorted(alphaPoints.begin(), alphaPoints.end());
+
+    if (needSorting) { sort(alphaPoints.begin(), alphaPoints.end()); }
+
+    updateFunction();
+}
+
+void TransferFunction::setColorPointIsoValue(const int index, const int isoValue)
+{
+    // off limits
+    if (index <= 0 || index >= colorPoints.size())
+    {
+        return;
+    }
+
+    // off limits iso val
+    if (isoValue <= 0 || isoValue >= 255)
+    {
+        return;
+    }
+
+    colorPoints[index].setIsoValue(isoValue);
+
+    // function points may need sorting after modiying sorting token, isoValue
+    bool needSorting = !is_sorted(colorPoints.begin(), colorPoints.end());
+
+    if (needSorting) { sort(colorPoints.begin(), colorPoints.end()); }
+
+    updateFunction();
 }

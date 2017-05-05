@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CubicSpline.cpp" />
     <ClCompile Include="external\Cinder-ImGui\lib\imgui\imgui.cpp" />
     <ClCompile Include="external\Cinder-ImGui\lib\imgui\imgui_demo.cpp" />
     <ClCompile Include="external\Cinder-ImGui\lib\imgui\imgui_draw.cpp" />
@@ -150,6 +151,7 @@
     <ClCompile Include="VolumeRenderingAppUi.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CubicSpline.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Postprocess.h" />
     <ClInclude Include="RenderingParams.h" />

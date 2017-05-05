@@ -237,7 +237,7 @@ void RaycastVolume::drawVolume(const Camera& camera, bool toRendertargets)
         gl::ScopedTextureBind backTex(backTexture, 1);
         gl::ScopedTextureBind volumeTex(volumeTexture, 2);
         gl::ScopedTextureBind gradientTex(gradientTexture, 3);
-        gl::ScopedTextureBind trasferTex(transferFunction->get1DTexture(), 4);
+        gl::ScopedTextureBind trasferTex(transferFunction->getColorMappingTexture(), 4);
         gl::ScopedTextureBind noiseTex(noiseTexture, 5);
 
         // raycast parameters

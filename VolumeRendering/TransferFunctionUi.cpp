@@ -2,6 +2,7 @@
 #include "RaycastVolume.h"
 #include "CinderImGui.h"
 using namespace glm;
+using namespace ci;
 
 void TransferFunctionUi::drawThresholdControl()
 {
@@ -14,6 +15,7 @@ void TransferFunctionUi::drawThresholdControl()
     float y = p.y - 35.0f - 4.0f;
     float steps = width / 255;
     ImGuiStyle& style = ui::GetStyle();
+    auto threshold = getThreshold();
 
     if (threshold.x > 0)
     {
@@ -27,12 +29,11 @@ void TransferFunctionUi::drawThresholdControl()
 
     // draw threshold controls
     ui::BeginGroup();
-    auto tThreshold = threshold;
     ui::PushItemWidth(-2.0f);
 
-    if (ui::SliderInt2("##Threshold", value_ptr(tThreshold), 0, 255))
+    if (ui::SliderInt2("##Threshold", value_ptr(threshold), 0, 255))
     {
-        setThreshold(tThreshold.x, tThreshold.y);
+        setThreshold(threshold.x, threshold.y);
         updateFunction();
     }
 
@@ -76,6 +77,8 @@ void TransferFunctionUi::drawControlPointsUi()
     float x = p.x + 4.0f;
     float y = p.y + 4.0f;
     float step = static_cast<float>(width) / 256;
+    auto& colorPoints = getColorPoints();
+    auto& alphaPoints = getAlphaPoints();
 
     for (int i = 0; i < 256; i++)
     {
@@ -95,12 +98,12 @@ void TransferFunctionUi::drawControlPointsUi()
         drawList->AddCircle(ImVec2(p.x + step * colorP.getIsoValue() + 4.0f, y + sz), 5, invCol32, 24);
     }
 
-    for (int i = 0; i < indexedTransferFunction.size() - 1; i++)
+    for (int i = 0; i < 255; i++)
     {
         auto aBegin = clamp(1.0f - getColor(i).a, 0.0f, 1.0f);
         auto aEnd = clamp(1.0f - getColor(i + 1).a, 0.0f, 1.0f);
         drawList->AddLine(ImVec2(p.x + step * i + 4.0f, y - 124.0f + aBegin * 120),
-                          ImVec2(p.x + step * (i + 1) + 4.0f, y - 124.0f + aEnd * 120), white, 2);
+            ImVec2(p.x + step * (i + 1) + 4.0f, y - 124.0f + aEnd * 120), white, 2);
     }
 
     for (auto& alphaP : alphaPoints)
@@ -116,47 +119,44 @@ void TransferFunctionUi::drawControlPointsUi()
 
 void TransferFunctionUi::drawControlPointList(int pointType)
 {
-    bool sortPoints = false;
     bool deleteCtrlPoint = false;
 
-    auto isoValueControl = [&](TransferFunctionPoint& p)
+    auto isoValueControl = [&](const TransferFunctionPoint& p, const int index)
+    {
+        int pIso = p.getIsoValue();
+        ui::SameLine();
+        ui::PushItemWidth(-30);
+
+        if (p.getIsoValue() != 0 && p.getIsoValue() != 255)
+        {
+            if (ui::SliderInt("##isoValA", &pIso, 1, 254))
             {
-                int pIso = p.getIsoValue();
-                ui::SameLine();
-                ui::PushItemWidth(-30);
+                pIso = min(max(pIso, 1), 254);
+                pointType == 0 ? setAlphaPointIsoValue(index, pIso)
+                    : setColorPointIsoValue(index, pIso);
+            }
+        }
+        else if (p.getIsoValue() == 0 || p.getIsoValue() == 255)
+        {
+            ui::PushStyleColor(ImGuiCol_Button, ImVec4(vec4(0.5f)));
+            ui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(vec4(0.5f)));
+            ui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(vec4(0.5f)));
+            ui::Button(std::to_string(p.getIsoValue()).c_str(), ImVec2(ui::GetContentRegionAvailWidth() - 30, 0));
+            ui::PopStyleColor(3);
+        }
 
-                if (p.getIsoValue() != 0 && p.getIsoValue() != 255)
-                {
-                    if (ui::SliderInt("##isoValA", &pIso, 1, 254))
-                    {
-                        pIso = min(max(pIso, 1), 254);
-                        p.setIsoValue(pIso);
-                        sortPoints = pointType == 0 ? !is_sorted(alphaPoints.begin(), alphaPoints.end())
-                                         : !is_sorted(colorPoints.begin(), colorPoints.end());
-                        updateFunction();
-                    }
-                }
-                else if (p.getIsoValue() == 0 || p.getIsoValue() == 255)
-                {
-                    ui::PushStyleColor(ImGuiCol_Button, ImVec4(vec4(0.5f)));
-                    ui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(vec4(0.5f)));
-                    ui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(vec4(0.5f)));
-                    ui::Button(std::to_string(p.getIsoValue()).c_str(), ImVec2(ui::GetContentRegionAvailWidth() - 30, 0));
-                    ui::PopStyleColor(3);
-                }
+        ui::PopItemWidth();
 
-                ui::PopItemWidth();
+        if (p.getIsoValue() != 0 && p.getIsoValue() != 255)
+        {
+            ui::SameLine();
 
-                if (p.getIsoValue() != 0 && p.getIsoValue() != 255)
-                {
-                    ui::SameLine();
-
-                    if (ui::Button("X", ImVec2(ui::GetContentRegionAvailWidth(), 0)))
-                    {
-                        deleteCtrlPoint = true;
-                    }
-                }
-            };
+            if (ui::Button("X", ImVec2(ui::GetContentRegionAvailWidth(), 0)))
+            {
+                deleteCtrlPoint = true;
+            }
+        }
+    };
 
     // draw control point list
     if (pointType == 0 ? ui::TreeNode("Alpha Points") : ui::TreeNode("Color Points"))
@@ -166,56 +166,56 @@ void TransferFunctionUi::drawControlPointList(int pointType)
 
         if (pointType == 0)
         {
-            for (auto it = alphaPoints.begin(); it != alphaPoints.end();)
+            for (auto i = 0; i < getAlphaPoints().size(); i++)
             {
-                ui::PushID(&(*it));
-                auto pAlpha = it->getAlpha();
+                auto& alphaP = getAlphaPoints()[i];
+                auto pAlpha = alphaP.getAlpha();
+
+                ui::PushID(&alphaP);
                 ui::PushItemWidth(ui::GetContentRegionAvailWidth() * 0.5f);
 
                 if (ui::DragFloat("##alpha", &pAlpha, 0.01f, 0.0f, 1.0f))
                 {
-                    it->setAlpha(pAlpha);
-                    updateFunction();
+                    setAlpha(i, pAlpha);
                 }
 
                 ui::PopItemWidth();
-                isoValueControl(*it);
+                isoValueControl(alphaP, i);
 
                 if (deleteCtrlPoint)
                 {
-                    it = alphaPoints.erase(it);
+                    removeAlphaPoint(i--);
                     deleteCtrlPoint = false;
                     updateFunction();
                 }
-                else { ++it; }
 
                 ui::PopID();
             }
         }
         else if (pointType == 1)
         {
-            for (auto it = colorPoints.begin(); it != colorPoints.end();)
+            for (auto i = 0; i < getColorPoints().size(); i++)
             {
-                ui::PushID(&(*it));
-                auto pColor = it->getColor();
+                auto& colorP = getColorPoints()[i];
+                auto pColor = colorP.getColor();
+
+                ui::PushID(&colorP);
                 ui::PushItemWidth(ui::GetContentRegionAvailWidth() * 0.5f);
 
                 if (ui::ColorEdit3("##color", value_ptr(pColor)))
                 {
-                    it->setColor(pColor);
-                    updateFunction();
+                    setColor(i, pColor);
                 }
 
                 ui::PopItemWidth();
-                isoValueControl(*it);
+                isoValueControl(colorP, i);
 
                 if (deleteCtrlPoint)
                 {
-                    it = colorPoints.erase(it);
+                    removeColorPoint(i--);
                     deleteCtrlPoint = false;
                     updateFunction();
                 }
-                else { ++it; }
 
                 ui::PopID();
             }
@@ -224,13 +224,6 @@ void TransferFunctionUi::drawControlPointList(int pointType)
         ui::EndChild();
         ui::EndGroup();
         ui::TreePop();
-    }
-
-    if (sortPoints)
-    {
-        // sort by iso value
-        pointType == 0 ? sort(alphaPoints.begin(), alphaPoints.end())
-            : sort(colorPoints.begin(), colorPoints.end());
     }
 }
 
