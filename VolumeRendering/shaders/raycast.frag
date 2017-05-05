@@ -20,9 +20,13 @@ uniform ivec2 threshold;
 uniform vec3 stepSize;
 uniform int iterations;
 uniform bool diffuseShading;
+uniform float stepScale;
+uniform float gamma;
+uniform float exposure;
 
 in vec4 position;
-out vec4 fragmentColor;
+
+layout (location=0) out vec4 oColor;
 
 // Spheremap Transform for normal encoding. Used in Cry Engine 3, presented by 
 // Martin Mittring in "A bit more Deferred", p. 13
@@ -65,40 +69,30 @@ void main(void)
 
         if(isoValue >= threshold.x && isoValue <= threshold.y)
         {
-            // check voxel solidity
-            vec3 s = -step * 0.5;
-            pos.xyz += s;
-            isoValue = int(255.0f * texture(volume, pos.xyz).x);
-            s *= isoValue >= threshold.x && isoValue <= threshold.y ? 0.5 : -0.5;
-            pos.xyz += s;
-            value.a = texture(volume, pos.xyz).x;
-            int isoValue = int(255.0f * value.a);
+            // assigned color from transfer function for this density
+            src = texture(transferFunction, value.a);
 
-            if(isoValue >= threshold.x && isoValue <= threshold.y)
+            // oppacity correction
+            src.a = 1 - pow((1 - src.a), stepScale / 0.5);
+
+            if(diffuseShading)
             {
                 // gradient value
                 value.xyz = decode(texture(gradients, pos.xyz).xy);
-
-                // assigned color from transfer function for this density
-                src = texture(transferFunction, value.a);
-
-                if(diffuseShading)
-                {
-                    // diffuse shading + fake ambient light
-                    vec3 normal = normalize(ciModelMatrixInverseTranspose * value.xyz);
-                    vec3 lightDir = normalize(-light.direction);
-                    float lambert = max(dot(normal, lightDir), 0.0);
-                    src.rgb = light.diffuse * lambert * src.rgb + light.ambient * src.rgb;
-                }
-
-                // front to back blending
-                src.rgb *= src.a;
-                dst = (1.0 - dst.a) * src + dst;
-
-                // optimization: break from loop on high enough alpha value
-                if(dst.a >= 0.95) 
-                    break;
+                // diffuse shading + fake ambient light
+                vec3 normal = normalize(ciModelMatrixInverseTranspose * value.xyz);
+                vec3 lightDir = normalize(-light.direction);
+                float lambert = max(dot(normal, lightDir), 0.0);
+                src.rgb = light.diffuse * lambert * src.rgb + light.ambient * src.rgb;
             }
+
+            // front to back blending
+            src.rgb *= src.a;
+            dst = (1.0 - dst.a) * src + dst;
+
+            // optimization: break from loop on high enough alpha value
+            if(dst.a >= 0.95) 
+                break;
         }
 
         pos.xyz += step;
@@ -108,9 +102,10 @@ void main(void)
             break;
     }
 
-     // apply gamma correction
-    float gamma = 2.2;
-    dst.rgb = pow(dst.rgb, vec3(1.0 / gamma));
+    // Exposure tone mapping
+    vec3 mapped =  vec3(1.0) - exp(-dst.rgb * exposure);
+    // Gamma correction 
+    mapped = pow(mapped, vec3(1.0 / gamma));
 
-    fragmentColor = dst;
+    oColor = vec4(mapped, 1.0);
 }

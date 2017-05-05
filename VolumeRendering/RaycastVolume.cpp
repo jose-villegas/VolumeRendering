@@ -2,6 +2,7 @@
 #include <cinder/app/AppBase.h>
 #include <cinder/Log.h>
 #include "TransferFunction.h"
+#include "RenderingParams.h"
 using namespace ci;
 using namespace glm;
 
@@ -12,7 +13,10 @@ RaycastVolume::RaycastVolume() : aspectRatios(1), scaleFactor(vec3(1)), stepScal
         .vertex(loadFile("shaders/positions.vert"))
         .fragment(loadFile("shaders/positions.frag")));
     // raycast shader
-    raycastShader = gl::GlslProg::create(gl::GlslProg::Format()
+    raycastShaderRendertargets = gl::GlslProg::create(gl::GlslProg::Format()
+        .vertex(loadFile("shaders/raycast.vert"))
+        .fragment(loadFile("shaders/raycast_rendertargets.frag")));
+    raycastShaderDirect = gl::GlslProg::create(gl::GlslProg::Format()
         .vertex(loadFile("shaders/raycast.vert"))
         .fragment(loadFile("shaders/raycast.frag")));
     // histogram calculation 
@@ -32,7 +36,7 @@ RaycastVolume::RaycastVolume() : aspectRatios(1), scaleFactor(vec3(1)), stepScal
     // create clockwise bbox for volume rendering
     createCubeVbo();
     // create frame buffer object
-    createFbos();
+    resizeFbos();
 }
 
 RaycastVolume::~RaycastVolume() {}
@@ -66,46 +70,27 @@ void RaycastVolume::setAspectratios(const vec3& value)
 
 void RaycastVolume::createCubeVbo()
 {
-    GLfloat vertices[24] =
-    {
-        0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 1.0f,
-        1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 1.0f
-    };
+    cubeMesh = TriMesh::create(geom::Cube());
 
-    GLuint indices[36] =
-    {
-        1, 5, 7,
-        7, 3, 1,
-        0, 2, 6,
-        6, 4, 0,
-        0, 1, 3,
-        3, 2, 0,
-        7, 5, 4,
-        4, 6, 7,
-        2, 3, 7,
-        7, 6, 2,
-        1, 0, 4,
-        4, 5, 1
-    };
+    // move cube to 0 - 1 coordinates
+    for (auto& pos : cubeMesh->getBufferPositions()) { pos += .5; }
 
-    // setup counter clock wise bbox data
-    verticesBuffer = gl::BufferObj::create(GL_ARRAY_BUFFER, 24 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
-    indicesBuffer = gl::BufferObj::create(GL_ELEMENT_ARRAY_BUFFER, 36 * sizeof(GLuint), indices, GL_STATIC_DRAW);
-    // setup vao for object
-    vertexArrayObject = gl::Vao::create();
-    vertexArrayObject->bind();
-    // vertex attributes locations
-    gl::enableVertexAttribArray(0);
-    // bind and link data
-    verticesBuffer->bind();
-    gl::vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, static_cast<GLfloat *>(nullptr));
-    indicesBuffer->bind();
+    cubeVao = gl::Vao::create();
+    // bind vertex buffer object
+    gl::ScopedVao scopedVao(cubeVao);
+    {
+        cubeVerticesBuffer = gl::Vbo::create(GL_ARRAY_BUFFER, sizeof(vec3) * cubeMesh->getNumVertices(),
+                                                            cubeMesh->getPositions<3>(), GL_STATIC_DRAW);
+        {
+            gl::ScopedBuffer scopedBuffer(cubeVerticesBuffer);
+            gl::vertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, static_cast<const GLvoid*>(nullptr));
+            gl::enableVertexAttribArray(0);
+        }
+        cubeIndicesBuffer = gl::Vbo::create<uint32_t>(GL_ELEMENT_ARRAY_BUFFER, cubeMesh->getIndices(), GL_STATIC_DRAW);
+        {
+            gl::ScopedBuffer scopedBuffer(cubeIndicesBuffer);
+        }
+    }
 }
 
 void RaycastVolume::readVolumeFromFile8(const std::string filepath)
@@ -133,7 +118,8 @@ void RaycastVolume::readVolumeFromFile8(const std::string filepath)
         format.setDataType(GL_UNSIGNED_BYTE);
         format.setInternalFormat(GL_RED);
         format.setSwizzleMask(GL_RED, GL_RED, GL_RED, GL_RED);
-        volumeTexture = gl::Texture3d::create(buffer.data(), GL_RED, dimensions.x, dimensions.y, dimensions.z, format);
+        volumeTexture = gl::Texture3d::create(buffer.data(), GL_RED,
+                                              dimensions.x, dimensions.y, dimensions.z, format);
         // finally has drawable data
         isDrawable = true;
     }
@@ -166,7 +152,8 @@ void RaycastVolume::readVolumeFromFile16(const std::string filepath)
         format.setDataType(GL_UNSIGNED_SHORT);
         format.setInternalFormat(GL_RED);
         format.setSwizzleMask(GL_RED, GL_RED, GL_RED, GL_RED);
-        volumeTexture = gl::Texture3d::create(buffer.data(), GL_RED, dimensions.x, dimensions.y, dimensions.z, format);
+        volumeTexture = gl::Texture3d::create(buffer.data(), GL_RED,
+                                              dimensions.x, dimensions.y, dimensions.z, format);
         // finally has drawable data
         isDrawable = true;
     }
@@ -174,33 +161,8 @@ void RaycastVolume::readVolumeFromFile16(const std::string filepath)
     file.close();
 }
 
-void RaycastVolume::createFbos()
-{
-    gl::Fbo::Format format = gl::Fbo::Format();
-    format.colorTexture(gl::Texture::Format().wrapS(GL_REPEAT)
-                                             .wrapT(GL_REPEAT)
-                                             .minFilter(GL_NEAREST)
-                                             .magFilter(GL_NEAREST)
-                                             .internalFormat(GL_RGBA16F)
-                                             .dataType(GL_FLOAT));
-    format.depthBuffer(GL_DEPTH_COMPONENT16);
-
-    try
-    {
-        frontDepth = gl::Renderbuffer::create(app::getWindowWidth(), app::getWindowHeight(), GL_DEPTH_COMPONENT16);
-        frontFbo = gl::Fbo::create(app::getWindowWidth(), app::getWindowHeight(), format);
-        backDepth = gl::Renderbuffer::create(app::getWindowWidth(), app::getWindowHeight(), GL_DEPTH_COMPONENT16);
-        backFbo = gl::Fbo::create(app::getWindowWidth(), app::getWindowHeight(), format);
-    }
-    catch (const Exception& e)
-    {
-        CI_LOG_EXCEPTION("Fbo/Renderbuffer create", e);
-    }
-
-    CI_CHECK_GL();
-}
-
-void RaycastVolume::loadFromFile(const vec3& dimensions, const vec3& ratios, const std::string filepath, bool is16Bits)
+void RaycastVolume::loadFromFile(const vec3& dimensions, const vec3& ratios, const std::string filepath,
+                                 bool is16Bits)
 {
     // compute step size and number of iterations for the given volume dimensions
     this->dimensions = dimensions;
@@ -217,76 +179,149 @@ void RaycastVolume::loadFromFile(const vec3& dimensions, const vec3& ratios, con
     generateGradients();
 }
 
-void RaycastVolume::drawFrontCubeFace() const
+void RaycastVolume::drawCubeFaces() const
 {
-    if (!isDrawable) return;
-
-    gl::enable(GL_CULL_FACE, true);
-    gl::cullFace(GL_BACK);
-    vertexArrayObject->bind();
-    gl::drawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, static_cast<GLuint *>(nullptr));
-    gl::disable(GL_CULL_FACE);
-}
-
-void RaycastVolume::drawBackCubeFace() const
-{
-    if (!isDrawable) return;
-
-    gl::enable(GL_CULL_FACE, true);
-    gl::cullFace(GL_FRONT);
-    vertexArrayObject->bind();
-    gl::drawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, static_cast<GLuint *>(nullptr));
-    gl::disable(GL_CULL_FACE);
-}
-
-void RaycastVolume::drawVolume() const
-{
-    if (!isDrawable) return;
-
-    // draw front face cube positions to render target
+    gl::enableDepth(true);
+    // draw front face
     {
-        frontFbo->bindFramebuffer(GL_DRAW_FRAMEBUFFER);
+        gl::ScopedFramebuffer scopedFramebuffer(frontFbo);
+        gl::ScopedViewport scopedViewport(ivec2(0), frontFbo->getSize());
+        gl::ScopedFaceCulling faceCulling(true, GL_BACK);
+        // draw front face cube positions to render target 
         gl::clear();
         positionsShader->bind();
         positionsShader->uniform("scaleFactor", scaleFactor);
+        positionsShader->uniform("renderingFront", true);
         gl::setDefaultShaderVars();
-        drawFrontCubeFace();
-        frontFbo->unbindFramebuffer();
+        gl::drawElements(gl::toGl(cubeMesh->getPrimitive()), cubeMesh->getNumIndices(),
+                         GL_UNSIGNED_INT, static_cast<GLuint *>(nullptr));
     }
-    // draw back face cube positions to render target
+    // draw back face
     {
-        backFbo->bindFramebuffer(GL_DRAW_FRAMEBUFFER);
+        gl::ScopedFramebuffer scopedFramebuffer(backFbo);
+        gl::ScopedViewport scopedViewport(ivec2(0), backFbo->getSize());
+        gl::ScopedFaceCulling faceCulling(true, GL_FRONT);
+        // draw back face cube positions to render target
         gl::clear();
-        drawBackCubeFace();
-        backFbo->unbindFramebuffer();
+        gl::drawElements(gl::toGl(cubeMesh->getPrimitive()), cubeMesh->getNumIndices(),
+                         GL_UNSIGNED_INT, static_cast<GLuint *>(nullptr));
     }
-    // raycast volume
+}
+
+void RaycastVolume::drawVolume(const Camera& camera, bool toRendertargets)
+{
+    if (!isDrawable) return;
+
+    // volume raycast
     {
-        gl::clear();
-        raycastShader->bind();
-        // scale volume
-        gl::setDefaultShaderVars();
-        // bind  textures
-        frontFbo->getTexture2d(GL_COLOR_ATTACHMENT0)->bind(0);
-        backFbo->getTexture2d(GL_COLOR_ATTACHMENT0)->bind(1);
-        volumeTexture->bind(2);
-        gradientTexture->bind(3);
-        transferFunction->get1DTexture()->bind(4);
-        noiseTexture->bind(5);
-        // raycast parameters
-        raycastShader->uniform("threshold", transferFunction->getThreshold());
-        raycastShader->uniform("scaleFactor", scaleFactor);
-        raycastShader->uniform("stepSize", stepSize * stepScale);
-        raycastShader->uniform("iterations", static_cast<int>(maxSize * (1.0f / stepScale) * 2.0f));
-        // lighting
-        raycastShader->uniform("diffuseShading", enableDiffuseShading);
-        raycastShader->uniform("light.direction", light.direction);
-        raycastShader->uniform("light.ambient", light.ambient);
-        raycastShader->uniform("light.diffuse", light.diffuse);
-        // draw cube
+        gl::ScopedMatrices scopedMatrices;
+        gl::ScopedVao scopedCubeVao(cubeVao);
+        gl::ScopedBuffer scopedCubeIndicesBuffer(cubeIndicesBuffer);
+
+        // set model matrix for model
+        gl::setMatrices(camera);
+        gl::rotate(modelRotation);
+        gl::translate(modelPosition);
+
+        // draw cube positions
+        drawCubeFaces();
+
+        // ray cast cube
+        auto program = toRendertargets ? raycastShaderRendertargets : raycastShaderDirect;
+        gl::ScopedGlslProg scopedProg(program);
         gl::ScopedBlend blend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        vertexArrayObject->bind();
-        gl::drawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, static_cast<GLuint *>(nullptr));
+        gl::enableDepth(true);
+
+        // bind  textures
+        gl::ScopedTextureBind frontTex(frontTexture, 0);
+        gl::ScopedTextureBind backTex(backTexture, 1);
+        gl::ScopedTextureBind volumeTex(volumeTexture, 2);
+        gl::ScopedTextureBind gradientTex(gradientTexture, 3);
+        gl::ScopedTextureBind trasferTex(transferFunction->get1DTexture(), 4);
+        gl::ScopedTextureBind noiseTex(noiseTexture, 5);
+
+        // raycast parameters
+        program->uniform("threshold", transferFunction->getThreshold());
+        program->uniform("scaleFactor", scaleFactor);
+        program->uniform("stepSize", stepSize * stepScale);
+        program->uniform("stepScale", stepScale);
+        program->uniform("iterations", static_cast<int>(maxSize * (1.0f / stepScale) * 2.0f));
+
+        // lighting
+        program->uniform("diffuseShading", enableDiffuseShading);
+        program->uniform("light.direction", light.direction);
+        program->uniform("light.ambient", light.ambient);
+        program->uniform("light.diffuse", light.diffuse);
+        gl::setDefaultShaderVars();
+        
+        if(toRendertargets)
+        {
+            const gl::ScopedFramebuffer scopedFramebuffer(volumeRBuffer);
+            {
+                const static GLenum buffers[] = {
+                    GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
+                };
+                gl::drawBuffers(2, buffers);
+            }
+            const gl::ScopedViewport scopedViewport(ivec2(0), volumeRBuffer->getSize());
+            gl::clear();
+            // draw cube
+            gl::drawElements(gl::toGl(cubeMesh->getPrimitive()), cubeMesh->getNumIndices(),
+                GL_UNSIGNED_INT, static_cast<GLuint *>(nullptr));
+        }
+        else
+        {
+            const gl::ScopedViewport scopedViewport(ivec2(0), app::toPixels(app::getWindowSize()));
+            program->uniform("gamma", RenderingParams::GetGamma());
+            program->uniform("exposure", RenderingParams::GetExposure());
+            gl::clear();
+            // draw cube
+            gl::drawElements(gl::toGl(cubeMesh->getPrimitive()), cubeMesh->getNumIndices(),
+                GL_UNSIGNED_INT, static_cast<GLuint *>(nullptr));
+        }
+    }
+}
+
+void RaycastVolume::resizeFbos()
+{
+    gl::Texture2d::Format dataFormat = gl::Texture2d::Format().internalFormat(GL_RGB16F)
+                                                              .magFilter(GL_NEAREST)
+                                                              .minFilter(GL_NEAREST)
+                                                              .wrap(GL_REPEAT)
+                                                              .dataType(GL_FLOAT);
+    const ivec2 winSize = app::getWindowSize();
+    const int32_t h = winSize.y;
+    const int32_t w = winSize.x;
+
+    try
+    {
+        // cube positions rendering
+        gl::Fbo::Format frontFormat, backFormat;
+        frontTexture = gl::Texture2d::create(w, h, dataFormat);
+        backTexture = gl::Texture2d::create(w, h, dataFormat);
+        volumeColor = gl::Texture2d::create(w, h, dataFormat);
+        volumeNormal = gl::Texture2d::create(w, h, dataFormat);
+
+        // front fbo
+        frontFormat.attachment(GL_COLOR_ATTACHMENT0, frontTexture);
+        frontFormat.depthBuffer();
+        frontFbo = gl::Fbo::create(w, h, frontFormat);
+
+        // back fbo
+        backFormat.attachment(GL_COLOR_ATTACHMENT0, backTexture);
+        backFormat.depthBuffer();
+        backFbo = gl::Fbo::create(w, h, backFormat);
+
+        // deferred rendering mode gbuffer
+        gl::Fbo::Format gBufferFormat;
+        gBufferFormat.attachment(GL_COLOR_ATTACHMENT0, volumeColor);
+        gBufferFormat.attachment(GL_COLOR_ATTACHMENT1, volumeNormal);
+        gBufferFormat.depthTexture();
+        volumeRBuffer = gl::Fbo::create(w, h, gBufferFormat);
+    }
+    catch (const Exception& e)
+    {
+        CI_LOG_EXCEPTION("Fbo/Renderbuffer create", e);
     }
 }
 
@@ -376,7 +411,27 @@ void RaycastVolume::setLight(vec3 direction, vec3 ambient, vec3 diffuse)
     light.diffuse = diffuse;
 }
 
-const Light& RaycastVolume::getLight() const
+const Light &RaycastVolume::getLight() const { return light; }
+
+const quat &RaycastVolume::getRotation() const { return modelRotation; }
+
+void RaycastVolume::setRotation(const quat& rotation) { modelRotation = rotation; }
+
+const vec3 &RaycastVolume::getPosition() const { return modelPosition; }
+
+void RaycastVolume::setPosition(const vec3& position) { modelPosition = position; }
+
+const gl::Texture2dRef& RaycastVolume::getColorTexture() const
 {
-    return light;
+    return volumeColor;
+}
+
+const gl::Texture2dRef& RaycastVolume::getNormalTexture() const
+{
+    return volumeNormal;
+}
+
+const gl::Texture2dRef& RaycastVolume::getDepthTexture() const
+{
+    return volumeRBuffer->getDepthTexture();
 }

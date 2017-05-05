@@ -17,7 +17,7 @@ TransferFunction::TransferFunction() : threshold(vec2(0, 255))
 
 TransferFunction::~TransferFunction() {}
 
-std::vector<TransferFunction::Cubic> TransferFunction::calculateCubicSpline(std::vector<vec3> points)
+std::vector<TransferFunction::Cubic> TransferFunction::CalculateCubicSpline(std::vector<vec3> points)
 {
     auto n = points.size() - 1;
     auto& v = points;
@@ -181,8 +181,8 @@ void TransferFunction::updateFunction()
         colorCtrPoints[i] = colorPoints[i].getColor();
     }
 
-    alphaSpline = move(calculateCubicSpline(alphaCtrPoints));
-    colorSpline = move(calculateCubicSpline(colorCtrPoints));
+    alphaSpline = move(CalculateCubicSpline(alphaCtrPoints));
+    colorSpline = move(CalculateCubicSpline(colorCtrPoints));
 
     // update fast access transfer function
     for (int i = 0; i < indexedTransferFunction.size(); i++)

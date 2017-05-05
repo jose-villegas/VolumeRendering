@@ -140,26 +140,37 @@
     <ClCompile Include="external\Cinder-ImGui\lib\imgui\imgui_demo.cpp" />
     <ClCompile Include="external\Cinder-ImGui\lib\imgui\imgui_draw.cpp" />
     <ClCompile Include="external\Cinder-ImGui\src\CinderImGui.cpp" />
+    <ClCompile Include="Postprocess.cpp" />
+    <ClCompile Include="RenderingParams.cpp" />
     <ClCompile Include="TransferFunction.cpp" />
     <ClCompile Include="TransferFunctionPoint.cpp" />
     <ClCompile Include="TransferFunctionUi.cpp" />
     <ClCompile Include="RaycastVolume.cpp" />
     <ClCompile Include="VolumeRenderingApp.cpp" />
+    <ClCompile Include="VolumeRenderingAppUi.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Light.h" />
+    <ClInclude Include="Postprocess.h" />
+    <ClInclude Include="RenderingParams.h" />
     <ClInclude Include="TransferFunction.h" />
     <ClInclude Include="TransferFunctionPoint.h" />
     <ClInclude Include="TransferFunctionUi.h" />
     <ClInclude Include="RaycastVolume.h" />
+    <ClInclude Include="VolumeRenderingAppUi.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\fs_quad.vert" />
+    <None Include="shaders\fxaa.frag" />
     <None Include="shaders\gradients.comp" />
     <None Include="shaders\histogram.comp" />
     <None Include="shaders\positions.frag" />
     <None Include="shaders\positions.vert" />
     <None Include="shaders\raycast.frag" />
     <None Include="shaders\raycast.vert" />
+    <None Include="shaders\raycast_rendertargets.frag" />
     <None Include="shaders\smooth_gradients.comp" />
+    <None Include="shaders\tonemapping.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\noise.png" />

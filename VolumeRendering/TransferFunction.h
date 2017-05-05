@@ -39,5 +39,5 @@ protected:
     std::vector<Cubic> colorSpline;
     std::array<glm::vec4, 256> indexedTransferFunction;
     cinder::gl::Texture1dRef transferFunctionTexture;
-    static std::vector<Cubic> calculateCubicSpline(std::vector<glm::vec3> points);
+    static std::vector<Cubic> CalculateCubicSpline(std::vector<glm::vec3> points);
 };
