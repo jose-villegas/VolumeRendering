@@ -1,0 +1,46 @@
+#version 430
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+// Transmittance from every voxel toward the directional light, the volume's own
+// shadow map. Rebuilt only when the light, the volume rotation or the transfer
+// function change, so the ray marcher pays a single fetch per sample.
+layout(binding=0) uniform sampler3D volume;
+layout(binding=1) uniform sampler1D colorMappingFunction;
+layout(binding=0, r16f) uniform writeonly image3D lightVolume;
+
+uniform vec2 threshold;
+// step toward the light in texture space
+uniform vec3 lightStep;
+// opacity correction exponent for this step, the transfer function alpha is per half voxel
+uniform float opacityExponent;
+uniform int maxSteps;
+
+float opacity(vec3 p)
+{
+    float density = texture(volume, p).r;
+
+    if (density < threshold.x || density > threshold.y) return 0.0;
+
+    return texture(colorMappingFunction, density).a;
+}
+
+void main()
+{
+    ivec3 size = imageSize(lightVolume);
+    ivec3 id = ivec3(gl_GlobalInvocationID);
+
+    if (any(greaterThanEqual(id, size))) return;
+
+    vec3 pos = (vec3(id) + 0.5) / vec3(size) + lightStep;
+    float transmittance = 1.0;
+
+    for (int i = 0; i < maxSteps && transmittance > 0.004; i++)
+    {
+        if (any(lessThan(pos, vec3(0.0))) || any(greaterThan(pos, vec3(1.0)))) break;
+
+        transmittance *= pow(1.0 - opacity(pos), opacityExponent);
+        pos += lightStep;
+    }
+
+    imageStore(lightVolume, id, vec4(transmittance));
+}

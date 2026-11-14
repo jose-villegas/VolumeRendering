@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    Builds every C++ project under this folder, including the Cinder submodule
+    (which asks for v143), with the Visual Studio 2026 toolset. Microsoft.Cpp.props
+    imports ForceImportBeforeCppProps before it resolves the toolset.
+  -->
+  <PropertyGroup>
+    <ForceImportBeforeCppProps>$(MSBuildThisFileDirectory)Toolset.props</ForceImportBeforeCppProps>
+  </PropertyGroup>
+</Project>

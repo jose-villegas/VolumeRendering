@@ -7,6 +7,7 @@
 #include "PostProcess.h"
 #include "VolumeRenderingAppUi.h"
 #include "RenderingParams.h"
+#include "Harness.h"
 
 using namespace ci;
 using namespace app;
@@ -24,8 +25,9 @@ public:
     void mouseDown(MouseEvent event) override;
 private:
     vec2 dragStart;
-    RaycastVolume volume;
-    PostProcess postProcess;
+    // created in setup, once the window's OpenGL context is current
+    std::unique_ptr<RaycastVolume> volumePtr;
+    std::unique_ptr<PostProcess> postProcess;
     CameraPersp camera;
     CameraPersp initialCamera;
     float dragPivotDistance{0.0f};
@@ -34,6 +36,11 @@ private:
 void VolumeRenderingApp::prepareSettings(Settings* settings)
 {
     settings->setWindowSize(1280, 720);
+    // opt-in command line driver for captures, does nothing without arguments
+    auto& harness = Harness::instance();
+    harness.parseCommandLine();
+
+    if (harness.windowSize().x > 0) settings->setWindowSize(harness.windowSize());
 }
 
 void VolumeRenderingApp::setup()
@@ -41,13 +48,24 @@ void VolumeRenderingApp::setup()
     auto options = ImGui::Options();
     options.font("fonts/DroidSans.ttf", 16);
     ui::initialize(options);
+
+    // captures always start from the default window layout
+    if (Harness::instance().isActive()) ImGui::GetIO().IniFilename = nullptr;
     // set camera initial setup
     camera.lookAt(vec3(0, 0, -4), vec3(0), vec3(0, 1, 0));
+    volumePtr = std::make_unique<RaycastVolume>();
+    postProcess = std::make_unique<PostProcess>();
+    VolumeRenderingAppUi::Initialize(*volumePtr);
+    // connected after the ui so captures include it
+    getWindow()->getSignalPostDraw().connect([] { Harness::instance().postDraw(); });
+    Harness::instance().start(*volumePtr, camera);
 }
 
 void VolumeRenderingApp::update()
 {
-    VolumeRenderingAppUi::DrawUi(volume);
+    if (!Harness::instance().hidesUi()) VolumeRenderingAppUi::DrawUi(*volumePtr);
+
+    Harness::instance().update(*volumePtr, camera);
 }
 
 void VolumeRenderingApp::draw()
@@ -55,22 +73,22 @@ void VolumeRenderingApp::draw()
     gl::clear();
     // volume raycasting
     {
-        volume.setPosition(-volume.centerPoint());
-        volume.drawVolume(camera, VolumeRenderingAppUi::PostProcessingEnabled());
+        volumePtr->setPosition(-volumePtr->centerPoint());
+        volumePtr->drawVolume(camera, VolumeRenderingAppUi::PostProcessingEnabled());
     }
     // post-process
-    if (VolumeRenderingAppUi::PostProcessingEnabled())
+    if (VolumeRenderingAppUi::PostProcessingEnabled() && volumePtr->hasVolume())
     {
-        postProcess.toneMapping(volume.getColorTexture());
+        postProcess->toneMapping(volumePtr->getColorTexture());
 
         // anti aliasing
         if(RenderingParams::FXAAEnabled())
         {
-            postProcess.fxAA();
+            postProcess->fxAA();
         }
         else
         {
-            postProcess.displayTexture();
+            postProcess->displayTexture();
         }
     }
 }
@@ -79,8 +97,8 @@ void VolumeRenderingApp::resize()
 {
     camera.setAspectRatio(getWindowAspectRatio());
     // update frame buffers
-    volume.resizeFbos();
-    postProcess.resizeFbos();
+    if (volumePtr) volumePtr->resizeFbos();
+    if (postProcess) postProcess->resizeFbos();
 }
 
 void VolumeRenderingApp::mouseWheel(MouseEvent event)
@@ -110,8 +128,6 @@ void VolumeRenderingApp::mouseDrag(MouseEvent event)
             deltaX = -deltaX;
             deltaY = -deltaY;
         }
-
-        console() << deltaX << ", " << deltaY << std::endl;
 
         vec3 rotated = angleAxis(deltaY, rightDirection) * (-initialCamera.getViewDirection() * dragPivotDistance);
         rotated = angleAxis(deltaX, initialCamera.getWorldUp()) * rotated;

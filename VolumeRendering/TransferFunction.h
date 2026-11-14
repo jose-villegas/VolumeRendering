@@ -11,6 +11,10 @@ public:
     glm::vec4 getColor(const float t /* t=[0..1] */);
     glm::vec4 getColor(const int isoValue /* isoValue=[0..255] */);
     virtual void updateFunction();
+    /**
+     * \brief Restores the default white, fully opaque function
+     */
+    void reset();
     void addColorPoint(const glm::vec3& color, const int isoValue);
     void addAlphaPoint(const float alpha, const int isoValue);
     void removeColorPoint(const int index);
@@ -25,6 +29,10 @@ public:
     const std::vector<TransferFunctionAlphaPoint> &getAlphaPoints() const;
     const std::array<glm::vec4, 256> &getIndexedTransferFunction() const;
     const cinder::gl::Texture1dRef &getColorMappingTexture();
+    /**
+     * \brief Increments every time the function changes, lets dependent data know when to rebuild
+     */
+    unsigned getVersion() const { return version; }
 private:
     glm::ivec2 threshold;
     std::vector<TransferFunctionColorPoint> colorPoints;
@@ -32,7 +40,8 @@ private:
     std::vector<CubicSpline> alphaSpline;
     std::vector<CubicSpline> colorSpline;
     std::array<glm::vec4, 256> indexedTransferFunction;
-    bool updateColorTexture;
+    bool updateColorTexture = false;
+    unsigned version = 0;
 
     cinder::gl::Texture1dRef colorMappingTexture;
 };
