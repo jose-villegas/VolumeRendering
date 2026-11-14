@@ -6,6 +6,12 @@ float RenderingParams::gammaValue = 2.2f;
 float RenderingParams::exposureValue = 1.0f;
 bool RenderingParams::fxaa = true;
 
+VolumetricLighting& RenderingParams::Volumetric()
+{
+    static VolumetricLighting settings;
+    return settings;
+}
+
 float RenderingParams::GetExposure() 
 {
     return exposureValue;

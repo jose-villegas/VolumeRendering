@@ -86,6 +86,7 @@ void TransferFunction::setThreshold(int minIso, int maxIso)
 
     threshold.x = minIso;
     threshold.y = maxIso;
+    version++;
 }
 
 const ivec2& TransferFunction::getThreshold() const
@@ -172,6 +173,21 @@ void TransferFunction::updateFunction()
 
     // update texture needs to be update on next query
     updateColorTexture = true;
+    version++;
+}
+
+void TransferFunction::reset()
+{
+    colorPoints.clear();
+    alphaPoints.clear();
+
+    colorPoints.push_back(TransferFunctionColorPoint(vec3(1), 0));
+    colorPoints.push_back(TransferFunctionColorPoint(vec3(1), 255));
+
+    alphaPoints.push_back(TransferFunctionAlphaPoint(1.0, 0));
+    alphaPoints.push_back(TransferFunctionAlphaPoint(1.0, 255));
+
+    updateFunction();
 }
 
 const std::vector<TransferFunctionColorPoint> &TransferFunction::getColorPoints() const
@@ -205,7 +221,7 @@ const gl::Texture1dRef& TransferFunction::getColorMappingTexture()
     else if (updateColorTexture)
     {
         colorMappingTexture->update(getIndexedTransferFunction().data(), GL_RGBA, GL_FLOAT, 0, 256, 0);
-        updateColorTexture = true;
+        updateColorTexture = false;
     }
 
     return colorMappingTexture;

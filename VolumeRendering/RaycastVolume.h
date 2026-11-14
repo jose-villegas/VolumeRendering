@@ -21,6 +21,7 @@ public:
     void setAspectratios(const glm::vec3& value);
     const std::array<float, 256> &getHistogram() const;
     void setTransferFunction(const std::shared_ptr<TransferFunction>& transferFunction);
+    const std::shared_ptr<TransferFunction> &getTransferFunction() const { return transferFunction; }
     void diffuseShading(bool enable);
     void setLight(glm::vec3 direction, glm::vec3 ambient, glm::vec3 diffuse);
     const Light &getLight() const;
@@ -28,11 +29,15 @@ public:
     void setRotation(const glm::quat& rotation);
     const glm::vec3 &getPosition() const;
     void setPosition(const glm::vec3& position);
+    bool hasVolume() const { return isDrawable; }
+    /**
+     * \brief Milliseconds the last rebuild of the lighting volumes took
+     */
+    float getLightingUpdateTime() const { return lightingUpdateTime; }
 
     // render targets
     const ci::gl::Texture2dRef &getColorTexture() const;
     const cinder::gl::Texture2dRef &getNormalTexture() const;
-    const cinder::gl::Texture2dRef &getDepthTexture() const;
 private:
     // histogram data
     std::array<float, 256> histogram;
@@ -68,6 +73,28 @@ private:
     ci::gl::GlslProgRef histogramCompute;
     ci::gl::GlslProgRef gradientsCompute;
     ci::gl::GlslProgRef smoothGradientsCompute;
+    ci::gl::GlslProgRef lightVolumeCompute;
+    ci::gl::GlslProgRef ambientVolumeCompute;
+
+    // volumetric lighting, rebuilt when any of the state they were built with changes
+    struct LightingState
+    {
+        unsigned volume = 0;
+        unsigned transferFunction = 0;
+        glm::ivec2 threshold{-1};
+        glm::vec3 lightDirection{0};
+        int divisor = 0;
+        float occlusionRadius = 0;
+        bool occlusion = false;
+        bool indirect = false;
+
+        bool operator==(const LightingState& other) const = default;
+    };
+    LightingState lightingState;
+    ci::gl::Texture3dRef lightVolume;
+    ci::gl::Texture3dRef ambientVolume;
+    unsigned volumeVersion = 0;
+    float lightingUpdateTime = 0.0f;
 
     // render targets
     ci::gl::Texture2dRef frontTexture;
@@ -86,7 +113,7 @@ private:
     bool enableDiffuseShading;
 
     // model
-    bool isDrawable;
+    bool isDrawable = false;
     glm::quat modelRotation;
     glm::vec3 modelPosition;
 
@@ -97,4 +124,12 @@ private:
 
     void extractHistogram();
     void generateGradients();
+    /**
+     * \brief Direction toward the light in the volume's texture space
+     */
+    glm::vec3 lightDirectionInVolume() const;
+    /**
+     * \brief Rebuilds the light and ambient volumes if anything they depend on changed
+     */
+    void updateLightingVolumes();
 };

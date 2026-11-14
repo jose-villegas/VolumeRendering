@@ -1,0 +1,83 @@
+#version 430
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+// Ambient occlusion and one bounce of indirect light, traced through the volume.
+// Every voxel marches a few short rays; the fraction of light that escapes within
+// the radius is the ambient visibility (alpha), and the directly lit material the
+// rays run into, read from the light volume, is reflected back as indirect light (rgb).
+layout(binding=0) uniform sampler3D volume;
+layout(binding=1) uniform sampler1D colorMappingFunction;
+layout(binding=2) uniform sampler3D lightVolume;
+layout(binding=0, rgba16f) uniform writeonly image3D ambientVolume;
+
+uniform vec2 threshold;
+// one reference voxel in texture space, the same unit the ray marcher steps in
+uniform float voxelSize;
+// occlusion radius in reference voxels
+uniform float radius;
+uniform int steps;
+uniform bool indirect;
+
+const int DIRECTIONS = 16;
+const float GOLDEN_ANGLE = 2.39996323;
+
+vec4 classify(vec3 p)
+{
+    float density = texture(volume, p).r;
+
+    if (density < threshold.x || density > threshold.y) return vec4(0.0);
+
+    return texture(colorMappingFunction, density);
+}
+
+void main()
+{
+    ivec3 size = imageSize(ambientVolume);
+    ivec3 id = ivec3(gl_GlobalInvocationID);
+
+    if (any(greaterThanEqual(id, size))) return;
+
+    vec3 origin = (vec3(id) + 0.5) / vec3(size);
+    float stepLength = radius / float(steps);
+    float opacityExponent = stepLength / 0.5;
+    float visibility = 0.0;
+    vec3 bounce = vec3(0.0);
+
+    for (int d = 0; d < DIRECTIONS; d++)
+    {
+        // fibonacci sphere, evenly spread directions
+        float z = 1.0 - (2.0 * d + 1.0) / DIRECTIONS;
+        float r = sqrt(1.0 - z * z);
+        float phi = GOLDEN_ANGLE * d;
+        vec3 dir = vec3(r * cos(phi), r * sin(phi), z);
+        vec3 step = dir * stepLength * voxelSize;
+
+        vec3 pos = origin + step * 0.5;
+        float transmittance = 1.0;
+
+        for (int i = 0; i < steps; i++)
+        {
+            pos += step;
+
+            if (any(lessThan(pos, vec3(0.0))) || any(greaterThan(pos, vec3(1.0)))) break;
+
+            vec4 material = classify(pos);
+            float alpha = 1.0 - pow(1.0 - material.a, opacityExponent);
+
+            if (alpha > 0.0)
+            {
+                if (indirect)
+                {
+                    // light reflected toward the voxel by the material this ray runs into
+                    bounce += transmittance * alpha * material.rgb * texture(lightVolume, pos).r;
+                }
+
+                transmittance *= 1.0 - alpha;
+            }
+        }
+
+        visibility += transmittance;
+    }
+
+    imageStore(ambientVolume, id, vec4(bounce, visibility) / float(DIRECTIONS));
+}

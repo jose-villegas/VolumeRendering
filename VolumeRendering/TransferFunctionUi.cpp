@@ -45,6 +45,7 @@ void TransferFunctionUi::drawUi(bool& open, const RaycastVolume& volume)
 {
     if (open)
     {
+        ui::SetNextWindowPos(ImVec2(20, 40), ImGuiSetCond_FirstUseEver);
         ui::Begin("Transfer Function", &open, ImGuiWindowFlags_AlwaysAutoResize);
         drawHistogram(volume);
         drawControlPointsUi();

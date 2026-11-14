@@ -13,6 +13,42 @@ bool VolumeRenderingAppUi::showTransferFunction = false;
 bool VolumeRenderingAppUi::showRotationControls = false;
 bool VolumeRenderingAppUi::showLightingSetup = false;
 std::string VolumeRenderingAppUi::path;
+std::shared_ptr<TransferFunctionUi> VolumeRenderingAppUi::transferFunctionUi;
+// light from the upper left, in front of the initial camera
+vec3 VolumeRenderingAppUi::lightRotation = vec3(-42.0f, 40.0f, 0.0f);
+vec3 VolumeRenderingAppUi::lightAmbient = vec3(0.1f);
+vec3 VolumeRenderingAppUi::lightDiffuse = vec3(1.0f);
+float VolumeRenderingAppUi::lightIntensity = 1.0f;
+bool VolumeRenderingAppUi::diffuseShading = true;
+
+void VolumeRenderingAppUi::Initialize(RaycastVolume& volume)
+{
+    transferFunctionUi = std::make_shared<TransferFunctionUi>();
+    volume.setTransferFunction(transferFunctionUi);
+    ApplyLight(volume);
+}
+
+void VolumeRenderingAppUi::ApplyLight(RaycastVolume& volume)
+{
+    vec3 rads = radians(lightRotation);
+    vec3 direction = vec3(0, 0, 1) * mat3(eulerAngleXYZ(rads.x, rads.y, rads.z));
+    volume.setLight(direction, lightAmbient, lightDiffuse * lightIntensity);
+}
+
+void VolumeRenderingAppUi::SetLight(RaycastVolume& volume, const vec3& rotation, float intensity)
+{
+    lightRotation = rotation;
+    lightIntensity = intensity;
+    ApplyLight(volume);
+}
+
+void VolumeRenderingAppUi::ShowWindows(bool rendering, bool lighting, bool transferFunction)
+{
+    showVolumeOptions = true;
+    showRendering = rendering;
+    showLightingSetup = lighting;
+    showTransferFunction = transferFunction;
+}
 
 bool VolumeRenderingAppUi::PostProcessingEnabled()
 {
@@ -39,24 +75,14 @@ void VolumeRenderingAppUi::DrawUi(RaycastVolume& volume)
         showVolumeOptions = isClosed;
     }
 
-    // initialize transfer function ui
-    static std::shared_ptr<TransferFunctionUi> transferFunctionUi = nullptr;
-
-    if(!transferFunctionUi)
-    {
-        transferFunctionUi = std::make_shared<TransferFunctionUi>();
-        volume.setTransferFunction(transferFunctionUi);
-    }
-    else
-    {
-        transferFunctionUi->drawUi(showTransferFunction, volume);
-    }
+    transferFunctionUi->drawUi(showTransferFunction, volume);
 }
 
 void VolumeRenderingAppUi::DrawRenderingOptions(RaycastVolume& volume)
 {
     if (showRendering)
     {
+        ui::SetNextWindowPos(ImVec2(20, ci::app::getWindowHeight() - 250.0f), ImGuiSetCond_FirstUseEver);
         ui::Begin("Rendering", &showRendering, ImGuiWindowFlags_AlwaysAutoResize);
         static float stepScale = volume.getStepScale();
         static vec3 aspectRatios = volume.getAspectRatios();
@@ -106,28 +132,52 @@ void VolumeRenderingAppUi::DrawLightingSetup(RaycastVolume& volume)
 {
     if (showLightingSetup)
     {
-        static Light light = volume.getLight();
-        static float lightIntensity = 1.0f;
-        static vec3 rotation;
-        static bool doShading = true;
-        bool changed = false;
+        ui::SetNextWindowPos(ImVec2(ci::app::getWindowWidth() - 470.0f, 40), ImGuiSetCond_FirstUseEver);
         ui::Begin("Lighting", &showLightingSetup, ImGuiWindowFlags_AlwaysAutoResize);
 
-        if (ui::Checkbox("Enable Diffuse Shading", &doShading))
+        auto& volumetric = RenderingParams::Volumetric();
+        int model = volumetric.enabled ? 1 : 0;
+
+        ui::Text("Model:");
+        ui::SameLine();
+        ui::RadioButton("Classic", &model, 0);
+        ui::SameLine();
+        ui::RadioButton("Volumetric", &model, 1);
+        volumetric.enabled = model == 1;
+
+        bool changed = false;
+        changed |= ui::SliderFloat3("Rotation", value_ptr(lightRotation), -180, 180);
+        changed |= ui::DragFloat3("Ambient", value_ptr(lightAmbient), 0.01f, 0, 1);
+        changed |= ui::DragFloat3("Diffuse", value_ptr(lightDiffuse), 0.01f, 0, 1);
+        changed |= ui::DragFloat("Intensity", &lightIntensity, 0.1f, 0, 32);
+
+        if (changed) { ApplyLight(volume); }
+
+        ui::Separator();
+
+        if (volumetric.enabled)
         {
-            volume.diffuseShading(doShading);
+            ui::SliderFloat("Gradient Shading", &volumetric.gradientShading, 0.0f, 1.0f);
+            ui::SliderFloat("Ambient Strength", &volumetric.ambientStrength, 0.0f, 8.0f);
+            ui::SliderFloat("Specular", &volumetric.specularStrength, 0.0f, 2.0f);
+            ui::SliderFloat("Shininess", &volumetric.shininess, 1.0f, 128.0f);
+            ui::Checkbox("Volumetric Shadows", &volumetric.shadows);
+            ui::Checkbox("Ambient Occlusion", &volumetric.occlusion);
+            ui::SliderFloat("Occlusion Radius", &volumetric.occlusionRadius, 2.0f, 32.0f);
+            ui::Checkbox("Indirect Light", &volumetric.indirect);
+            ui::SliderFloat("Indirect Strength", &volumetric.indirectStrength, 0.0f, 4.0f);
+            ui::Text("Lighting volumes:");
+            ui::SameLine();
+            ui::RadioButton("Full", &volumetric.volumeDivisor, 1);
+            ui::SameLine();
+            ui::RadioButton("1/2", &volumetric.volumeDivisor, 2);
+            ui::SameLine();
+            ui::RadioButton("1/4", &volumetric.volumeDivisor, 4);
+            ui::Text("Last rebuild: %.1f ms", volume.getLightingUpdateTime());
         }
-
-        changed |= ui::SliderFloat3("Rotation", value_ptr(rotation), -180, 180);
-        changed |= ui::DragFloat3("Ambient", value_ptr(light.ambient), 0.01, 0, 1);
-        changed |= ui::DragFloat3("Diffuse", value_ptr(light.diffuse), 0.01, 0, 1);
-        changed |= ui::DragFloat("Intensity", &lightIntensity, 0.1, 0, 32);
-
-        if (changed)
+        else if (ui::Checkbox("Enable Diffuse Shading", &diffuseShading))
         {
-            vec3 rads = radians(rotation);
-            light.direction = vec3(0, 0, 1) * mat3(eulerAngleXYZ(rads.x, rads.y, rads.z));
-            volume.setLight(light.direction, light.ambient, light.diffuse * lightIntensity);
+            volume.diffuseShading(diffuseShading);
         }
 
         ui::End();

@@ -10,6 +10,7 @@ void PostProcess::displayTexture(const gl::Texture2dRef colorTex) const
 {
     const gl::ScopedViewport scopedViewport(ivec2(0), toPixels(getWindowSize()));
     const gl::ScopedMatrices scopedMatrices;
+    const gl::ScopedBlend noBlend(false);
     const gl::ScopedTextureBind scopedTextureBind(colorTex ? colorTex : temporalTexture, 0);
 
     // no depth write or read for quad display
@@ -30,6 +31,7 @@ void PostProcess::toneMapping(const gl::Texture2dRef& hdrBuffer) const
     const gl::ScopedFramebuffer scopedFramebuffer(temporalFbo);
     const gl::ScopedViewport scopedViewport(ivec2(0), temporalFbo->getSize());
     const gl::ScopedMatrices scopedMatrices;
+    const gl::ScopedBlend noBlend(false);
     const gl::ScopedTextureBind scopedTextureBind(hdrBuffer, 0);
 
     // custom uniforms
@@ -54,6 +56,7 @@ void PostProcess::fxAA(const gl::Texture2dRef& texture) const
 {
     const gl::ScopedViewport scopedViewport(ivec2(0), toPixels(getWindowSize()));
     const gl::ScopedMatrices scopedMatrices;
+    const gl::ScopedBlend noBlend(false);
     const gl::ScopedTextureBind scopedTextureBind(texture ? texture : temporalTexture, 0);
 
     // custom uniforms
